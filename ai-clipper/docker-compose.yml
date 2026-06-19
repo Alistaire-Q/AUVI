@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: auvi-backend
+    ports:
+      - "8000:8000"
+    # volumes:
+      # - ./storage:/app/storage
+      # - ./backend:/app/backend
+    environment:
+      - STORAGE_PATH=/app/storage
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: auvi-frontend
+    ports:
+      - "5173:5173"
+    # volumes:
+    #   - ./frontend:/app/frontend
+    #   - /app/frontend/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
