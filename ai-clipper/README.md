@@ -1,78 +1,195 @@
-# AI Clipper ✂️
+# AI‑Clipper
 
-A fully local, zero-cost AI video clipping application that processes YouTube URLs and uploaded videos, identifies the most engaging moments using Whisper transcription + Python-based scoring, and generates downloadable short clips with caption overlays.
+> A powerful AI‑powered video clipping tool that extracts highlights automatically.
 
-## Features
-- **YouTube Downloader**: Download YouTube videos directly using `yt-dlp`.
-- **Local File Uploads**: Drag and drop your local MP4, MOV, AVI, or WebM files.
-- **Local AI Transcription**: Uses OpenAI's `Whisper` model (running locally, offline) to transcribe audio.
-- **Viral Scoring Engine**: Analyzes transcript using a custom sliding window algorithm looking for hook keywords, high energy markers, question hooks, and optimal timing.
-- **Auto Clip Generation**: Uses `FFmpeg` to cut video segments efficiently.
-- **Dynamic Captions**: View clips with viral word-by-word caption overlays inside the browser.
-- **Full Control**: Settings for clip duration, max clips, language, and minimum score.
+---
 
-## Architecture
+## 📦 Table of Contents
 
-* **Frontend**: React 18, Vite, Tailwind CSS 3.4, Zustand (State Management), React Router.
-* **Backend**: FastAPI, SQLAlchemy + SQLite, FFmpeg-python, yt-dlp, whisper.
+- [Project Overview](#project-overview)
+- [Prerequisites](#prerequisites)
+- [Getting Started (Docker)](#getting-started-docker)
+- [Running the Application](#running-the-application)
+- [Development Mode](#development-mode)
+- [Testing](#testing)
+- [Deploy to Production](#deploy-to-production)
+- [Version Control & Open‑Source Release](#version‑control--open‑source-release)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Project Overview
+
+**AI‑Clipper** is a full‑stack application that processes video files, detects scenes of interest using AI models, and provides an easy‑to‑use UI for editing and exporting clips. The repository contains:
+
+- **backend** – FastAPI server (`backend/`)
+-   - `main.py` – entry point
+-   - `database.py` – SQLite wrapper
+-   - `routers/` – API routes
+-   - Dockerfile for containerising the service
+- **frontend** – React application (`frontend/`)
+-   - `src/components/ProcessingSteps.jsx` – UI component for the clipping pipeline
+
+---
 
 ## Prerequisites
-To run with Docker (Recommended):
-- Docker and Docker Compose
 
-To run manually:
-- Python 3.11+
-- Node.js 20+
-- FFmpeg installed and in your PATH
+| Tool | Version |
+|------|---------|
+| Docker | 24.0+ |
+| Docker‑Compose | 2.20+ |
+| Git | 2.40+ |
+| Python | 3.12 (used inside the container) |
+| Node.js | 20.x (for local UI development) |
 
-## Installation (Docker)
-1. Clone this repository.
-2. Navigate to the root directory `ai-clipper`.
-3. Run `docker-compose up --build`.
-4. Open `http://localhost:5173` in your browser.
+> **Note:** All commands below assume a **Unix‑like shell** (PowerShell works similarly on Windows).
 
-*Note: The first time it runs, the backend container will download the Whisper base model, which might take a minute depending on your internet connection.*
+---
 
-## Installation (Manual)
+## Getting Started (Docker)
 
-### 1. Backend Setup
+1. **Clone the repository** (if you haven't already):
+   ```bash
+   git clone https://github.com/your‑username/ai-clipper.git
+   cd ai-clipper
+   ```
+
+2. **Build the Docker image** (the Dockerfile lives in `backend/`):
+   ```bash
+   docker build -t aiclipper/backend ./backend
+   ```
+
+3. **Run the containers** using Docker Compose (creates both backend and a lightweight dev server for the frontend):
+   ```bash
+   docker compose -f docker-compose.yml up -d
+   ```
+   This will:
+   - Start the FastAPI backend on `http://localhost:8000`
+   - Serve the React UI on `http://localhost:3000`
+   - Mount a persistent SQLite volume at `./data/db.sqlite3`
+
+4. **Verify the service**:
+   ```bash
+   curl http://localhost:8000/health
+   ```
+   You should receive a JSON payload `{ "status": "ok" }`.
+
+---
+
+## Running the Application
+
+Once the containers are up, open your browser and navigate to:
+
+- **Frontend UI** – `http://localhost:3000`
+- **API Docs** – `http://localhost:8000/docs`
+
+You can now upload videos via the UI, and the backend will process them using the AI model.
+
+---
+
+## Development Mode
+
+If you want to work on the code without Docker, follow these steps:
+
 ```bash
+# Backend (Python)
 cd backend
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
+python -m venv .venv
+.venv\Scripts\activate   # Windows PowerShell
 pip install -r requirements.txt
-
-# Start the server
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+uvicorn main:app --reload
 ```
 
-### 2. Frontend Setup
 ```bash
+# Frontend (Node.js)
 cd frontend
 npm install
-
-# Start the dev server
-npm run dev
+npm start
 ```
-Open `http://localhost:5173` in your browser.
 
-## End-to-End Testing
-1. Launch the application.
-2. On the home page, paste a short YouTube video URL (e.g., a 2-3 minute tech review or podcast segment).
-3. Click "Process".
-4. You will be redirected to the processing page where you can see the 4 steps: Downloading, Transcribing, Analyzing, and Generating Clips.
-5. Once complete, you will land on the Dashboard.
-6. Play the original video on the left, click the timeline to see where clips were extracted from.
-7. Browse the generated clips on the right. Notice the Viral Score and categories (Hook, Key Point, CTA).
-8. Click "Preview" on a clip to view the video with dynamic word-by-word captions.
-9. Click "Download" to save the MP4.
+The frontend dev server runs on `http://localhost:3000` and proxies API calls to `http://localhost:8000`.
 
-## Limitations & Notes
-- Captions are generated as HTML overlays in the frontend, rather than burned into the MP4 file, to save massive amounts of processing time.
-- Whisper models (`tiny`, `base`) run on CPU by default in this configuration.
-- Storage is managed in the `/storage` directory (or local `./storage` if not using Docker).
+---
+
+## Testing
+
+### Backend
+```bash
+cd backend
+pytest
+```
+
+### Frontend
+```bash
+cd frontend
+npm test
+```
+
+---
+
+## Deploy to Production
+
+1. **Push the Docker image to a registry** (Docker Hub example):
+   ```bash
+   docker tag aiclipper/backend yourdockerhubusername/aiclipper:latest
+   docker push yourdockerhubusername/aiclipper:latest
+   ```
+2. **Run in a production environment** (Kubernetes, Docker Swarm, etc.) – ensure you set environment variables for any secrets (e.g., API keys) and mount a persistent volume for the SQLite database.
+
+---
+
+## Version Control & Open‑Source Release
+
+The project is intended to be open‑source. Follow these steps to initialise the repository and push to GitHub:
+
+1. **Initialise Git (if not already)**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit – AI‑Clipper core"
+   ```
+
+2. **Create a new repository on GitHub** (via the website or the CLI):
+   ```bash
+   gh repo create your‑username/ai-clipper --public --source=. --remote=origin
+   ```
+   *If you prefer the web UI, create a repository named `ai-clipper` and copy the remote URL.*
+
+3. **Push the code**
+   ```bash
+   git branch -M main
+   git push -u origin main
+   ```
+
+4. **Add useful CI badges** to the top of this README (example for GitHub Actions):
+   ```markdown
+   ![Tests](https://github.com/your‑username/ai-clipper/actions/workflows/test.yml/badge.svg)
+   ```
+
+5. **Add a LICENSE** (MIT recommended for permissive open‑source):
+   ```bash
+   curl -o LICENSE https://raw.githubusercontent.com/github/choosealicense.com/gh-pages/_licenses/mit.txt
+   git add LICENSE
+   git commit -m "Add MIT license"
+   git push
+   ```
+
+---
+
+## Contributing
+
+We welcome contributions! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Code style (flake8 for Python, eslint for JS)
+- Pull‑request process
+- Issue templates
+
+---
+
+## License
+
+This project is licensed under the **MIT License** – see the `LICENSE` file for details.
+
+---
+
+*Happy clipping!*

@@ -197,7 +197,9 @@ def _transcribe_chunk(
 
 def transcribe(
     audio_path: str,
-    language: str = "auto",
+    # Di-set secara eksplisit ke Bahasa Indonesia untuk akurasi transkripsi
+    # yang optimal dalam konteks konten Indonesia
+    language: str = "id",
     model_name: str = "base",  # kept for backward compat, ignored
 ) -> dict:
     """
