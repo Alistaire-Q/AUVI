@@ -21,7 +21,7 @@ from models.schemas import (
 from services.downloader import download_youtube, get_video_info
 from services.transcriber import extract_audio, transcribe
 from services.analyzer import find_best_clips
-from services.semantic_validator import validate_semantic_completeness
+from services.semantic_validator import validate_and_fix_clips
 from services.clipper import generate_clip, generate_thumbnail, get_video_duration
 
 logger = logging.getLogger(__name__)
@@ -125,8 +125,8 @@ def _process_video_pipeline(job_id: str):
             # Dapatkan klip mentah dari LLM
             llm_clips = find_best_clips(transcript, settings)
 
-            # Terapkan validasi semantik (fokus pada daftar dan jawaban tidak utuh)
-            clips_data = validate_semantic_completeness(
+            # Validasi & perbaiki agar tiap klip utuh dan tidak terpecah
+            clips_data = validate_and_fix_clips(
                 llm_clips,
                 transcript.get("words", [])
             )

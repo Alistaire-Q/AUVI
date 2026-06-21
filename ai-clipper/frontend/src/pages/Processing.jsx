@@ -8,7 +8,7 @@ import useClipStore from '../store/useClipStore';
 export default function Processing() {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const { processing, setProcessing, resetProcessing } = useClipStore();
+  const { processing, setProcessing, resetProcessing, addRecentProject } = useClipStore();
   const [jobInfo, setJobInfo] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -21,6 +21,15 @@ export default function Processing() {
     // Fetch initial job info
     getJob(jobId).then(data => {
       setJobInfo(data);
+      // Update judul di Recent Projects jika sudah tersedia
+      if (data.title && data.title !== 'Untitled') {
+        addRecentProject({
+          id: jobId,
+          title: data.title,
+          source: data.source_type || 'youtube',
+          date: data.created_at || new Date().toISOString(),
+        });
+      }
       if (data.status === 'completed') {
         navigate(`/dashboard/${jobId}`);
       }

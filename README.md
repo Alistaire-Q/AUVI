@@ -1,196 +1,413 @@
-# AI‑Clipper
+# 🎬 AI‑Clipper (AUVI)
 
-> A powerful AI‑powered video clipping tool that extracts highlights automatically.
+> Tool AI yang secara otomatis memotong video panjang menjadi klip pendek siap viral, lengkap dengan subtitle bergaya TikTok dan crop vertikal 9:16.
 
 ---
 
-## 📦 Table of Contents
+## 📦 Daftar Isi
 
-- [Project Overview](#project-overview)
-- [Prerequisites](#prerequisites)
-- [Getting Started (Docker)](#getting-started-docker)
-- [Running the Application](#running-the-application)
-- [Development Mode](#development-mode)
-- [Testing](#testing)
-- [Deploy to Production](#deploy-to-production)
-- [Version Control & Open‑Source Release](#version‑control--open‑source-release)
+- [Gambaran Umum](#gambaran-umum)
+- [Fitur Utama](#fitur-utama)
+- [Panduan Instalasi dari Nol](#panduan-instalasi-dari-nol)
+  - [1. Instal Docker Desktop](#1-instal-docker-desktop)
+  - [2. Instal Git](#2-instal-git)
+  - [3. Dapatkan API Key Groq (GRATIS)](#3-dapatkan-api-key-groq-gratis)
+  - [4. Clone Repository](#4-clone-repository)
+  - [5. Konfigurasi Environment Variable](#5-konfigurasi-environment-variable)
+  - [6. Jalankan Aplikasi](#6-jalankan-aplikasi)
+  - [7. Buka di Browser](#7-buka-di-browser)
+- [Mode Pengembangan (Tanpa Docker)](#mode-pengembangan-tanpa-docker)
+- [Struktur Proyek](#struktur-proyek)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
-- [License](#license)
+- [Lisensi](#lisensi)
 
 ---
 
-## Project Overview
+## Gambaran Umum
 
-**AI‑Clipper** is a full‑stack application that processes video files, detects scenes of interest using AI models, and provides an easy‑to‑use UI for editing and exporting clips. The repository contains:
+**AI‑Clipper (AUVI)** adalah aplikasi full‑stack yang terdiri dari:
 
-- **backend** – FastAPI server (`backend/`)
--   - `main.py` – entry point
--   - `database.py` – SQLite wrapper
--   - `routers/` – API routes
--   - Dockerfile for containerising the service
-- **frontend** – React application (`frontend/`)
--   - `src/components/ProcessingSteps.jsx` – UI component for the clipping pipeline
-
----
-
-## Prerequisites
-
-| Tool | Version |
-|------|---------|
-| Docker | 24.0+ |
-| Docker‑Compose | 2.20+ |
-| Git | 2.40+ |
-| Python | 3.12 (used inside the container) |
-| Node.js | 20.x (for local UI development) |
-
-> **Note:** All commands below assume a **Unix‑like shell** (PowerShell works similarly on Windows).
+- **Backend** — Server FastAPI (Python) yang menangani:
+  - Download video YouTube via yt‑dlp
+  - Transkripsi audio menggunakan Groq Whisper API
+  - Analisis konten menggunakan LLM (Llama 3.3 70B via Groq)
+  - Pemotongan video menggunakan FFmpeg dengan crop vertikal + subtitle
+- **Frontend** — Aplikasi React (Vite) sebagai antarmuka pengguna
 
 ---
 
-## Getting Started (Docker)
+## Fitur Utama
 
-1. **Clone the repository** (if you haven't already):
-   ```bash
-   git clone https://github.com/your‑username/ai-clipper.git
-   cd ai-clipper
-   ```
-
-2. **Build the Docker image** (the Dockerfile lives in `backend/`):
-   ```bash
-   docker build -t aiclipper/backend ./backend
-   ```
-
-3. **Run the containers** using Docker Compose (creates both backend and a lightweight dev server for the frontend):
-   ```bash
-   docker compose -f docker-compose.yml up -d
-   ```
-   This will:
-   - Start the FastAPI backend on `http://localhost:8000`
-   - Serve the React UI on `http://localhost:3000`
-   - Mount a persistent SQLite volume at `./data/db.sqlite3`
-
-4. **Verify the service**:
-   ```bash
-   curl http://localhost:8000/health
-   ```
-   You should receive a JSON payload `{ "status": "ok" }`.
+- ✅ Input dari **YouTube URL** atau **upload file video** langsung
+- ✅ Transkripsi otomatis dengan **word‑level timestamps**
+- ✅ AI menganalisis konten dan memilih segmen paling menarik
+- ✅ **Crop vertikal 9:16** otomatis dengan face tracking
+- ✅ **Subtitle bergaya TikTok** (kuning, bold, burn‑in)
+- ✅ Progress tracking **real‑time** via Server‑Sent Events
+- ✅ 100% gratis — menggunakan **Groq API** (gratis)
 
 ---
 
-## Running the Application
+## Panduan Instalasi dari Nol
 
-Once the containers are up, open your browser and navigate to:
+Panduan ini ditujukan untuk **pemula yang baru pertama kali setup**. Ikuti langkah demi langkah dari awal.
 
-- **Frontend UI** – `http://localhost:3000`
-- **API Docs** – `http://localhost:8000/docs`
+### Prasyarat Sistem
 
-You can now upload videos via the UI, and the backend will process them using the AI model.
+| Komponen | Minimum |
+|----------|---------|
+| Sistem Operasi | Windows 10/11, macOS, atau Linux |
+| RAM | 4 GB (8 GB direkomendasikan) |
+| Penyimpanan | 5 GB ruang kosong |
+| Koneksi Internet | Diperlukan untuk download video & API calls |
 
 ---
 
-## Development Mode
+### 1. Instal Docker Desktop
 
-If you want to work on the code without Docker, follow these steps:
+Docker digunakan untuk menjalankan seluruh aplikasi (backend + frontend) dalam container, sehingga **kamu tidak perlu menginstal Python, Node.js, FFmpeg, dll secara manual**.
+
+#### Windows:
+
+1. Buka [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+2. Klik **"Download for Windows"**
+3. Jalankan file installer `Docker Desktop Installer.exe`
+4. Ikuti wizard instalasi — centang **"Use WSL 2 instead of Hyper-V"** jika diminta
+5. Restart komputer jika diminta
+6. Setelah restart, buka **Docker Desktop** dari Start Menu
+7. Tunggu sampai Docker Engine berstatus **"Running"** (ikon hijau di taskbar)
+
+#### macOS:
+
+1. Buka [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+2. Download versi untuk **Apple Silicon (M1/M2/M3)** atau **Intel** sesuai Mac kamu
+3. Buka file `.dmg` dan drag **Docker** ke folder **Applications**
+4. Buka Docker dari **Launchpad** dan tunggu sampai berjalan
+
+#### Linux (Ubuntu/Debian):
 
 ```bash
-# Backend (Python)
-cd backend
+# Instal Docker Engine
+curl -fsSL https://get.docker.com | sudo sh
+
+# Tambahkan user ke group docker (agar tidak perlu sudo)
+sudo usermod -aG docker $USER
+
+# Logout dan login kembali, lalu verifikasi
+docker --version
+```
+
+#### ✅ Verifikasi Docker Terinstal:
+
+Buka **Terminal** (atau **PowerShell** di Windows) dan jalankan:
+
+```bash
+docker --version
+docker compose version
+```
+
+Jika muncul nomor versi (misalnya `Docker version 24.x.x`), berarti Docker sudah terinstal dengan benar.
+
+---
+
+### 2. Instal Git
+
+Git digunakan untuk men‑download kode sumber proyek ini.
+
+#### Windows:
+
+1. Buka [https://git-scm.com/downloads/win](https://git-scm.com/downloads/win)
+2. Download installer dan jalankan
+3. Pada saat instalasi, pilih semua opsi default (klik **Next** terus)
+4. Setelah selesai, buka **PowerShell** dan jalankan:
+
+```bash
+git --version
+```
+
+#### macOS:
+
+```bash
+# Git biasanya sudah terinstal. Verifikasi dengan:
+git --version
+
+# Jika belum ada, instal via Homebrew:
+brew install git
+```
+
+#### Linux:
+
+```bash
+sudo apt update && sudo apt install -y git
+```
+
+---
+
+### 3. Dapatkan API Key Groq (GRATIS)
+
+AUVI menggunakan **Groq API** untuk transkripsi (Whisper) dan analisis konten (Llama 3.3 70B). API Key ini **100% gratis**.
+
+1. Buka [https://console.groq.com](https://console.groq.com)
+2. **Daftar akun** (bisa login dengan Google)
+3. Setelah masuk, klik **"API Keys"** di sidebar kiri
+4. Klik **"Create API Key"**
+5. Beri nama (misalnya: `auvi`) dan klik **"Submit"**
+6. **Salin API Key** yang muncul (dimulai dengan `gsk_...`) — **simpan baik‑baik, tidak bisa dilihat lagi**
+
+---
+
+### 4. Clone Repository
+
+Buka **Terminal** (atau **PowerShell** di Windows) dan jalankan:
+
+```bash
+# Pilih folder tempat kamu ingin menyimpan proyek
+cd ~/Desktop
+
+# Clone repository
+git clone https://github.com/Alistaire-Q/AUVI.git
+
+# Masuk ke folder proyek
+cd AUVI/ai-clipper
+```
+
+---
+
+### 5. Konfigurasi Environment Variable
+
+Backend memerlukan **GROQ_API_KEY** agar bisa berfungsi. Buat file `.env` di dalam folder `ai-clipper`:
+
+#### Cara Mudah (Semua OS):
+
+Buat file bernama `.env` (perhatikan titik di awal nama file) di dalam folder `ai-clipper/` dengan isi:
+
+```env
+GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+```
+
+#### Cara via Terminal:
+
+**Windows (PowerShell):**
+```powershell
+echo "GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI" | Out-File -Encoding utf8 .env
+```
+
+**macOS / Linux:**
+```bash
+echo "GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI" > .env
+```
+
+> ⚠️ **PENTING:** Ganti `gsk_PASTE_API_KEY_KAMU_DISINI` dengan API Key yang kamu salin dari langkah 3.
+
+---
+
+### 6. Jalankan Aplikasi
+
+Pastikan kamu masih berada di folder `ai-clipper/`, lalu jalankan:
+
+```bash
+docker compose up --build -d
+```
+
+**Penjelasan:**
+- `--build` → Membangun Docker image dari kode sumber
+- `-d` → Menjalankan di background (detached mode)
+
+⏳ **Proses build pertama kali memerlukan waktu 3–10 menit** (tergantung kecepatan internet) karena Docker harus mengunduh base image dan menginstal semua dependensi. Build selanjutnya akan jauh lebih cepat karena menggunakan cache.
+
+#### ✅ Verifikasi Container Berjalan:
+
+```bash
+docker compose ps
+```
+
+Kamu harus melihat 2 container dengan status **"Up"**:
+- `auvi-backend`
+- `auvi-frontend`
+
+---
+
+### 7. Buka di Browser
+
+Setelah container berjalan, buka browser dan akses:
+
+| Halaman | URL |
+|---------|-----|
+| 🖥️ **Aplikasi Web (Frontend)** | [http://localhost:5173](http://localhost:5173) |
+| 📄 **API Documentation (Swagger)** | [http://localhost:8000/docs](http://localhost:8000/docs) |
+
+### 🎉 Selesai! Cara Menggunakan:
+
+1. Buka [http://localhost:5173](http://localhost:5173)
+2. **Tempelkan link YouTube** atau **upload file video**
+3. Klik **"Process"**
+4. Tunggu AI memproses video (download → transkripsi → analisis → potong klip)
+5. Download klip yang dihasilkan!
+
+---
+
+## Menghentikan & Menjalankan Ulang
+
+```bash
+# Menghentikan semua container
+docker compose down
+
+# Menjalankan ulang (tanpa rebuild)
+docker compose up -d
+
+# Menjalankan ulang dengan rebuild (setelah ada perubahan kode)
+docker compose up --build -d
+
+# Melihat log backend secara real-time
+docker logs -f auvi-backend
+```
+
+---
+
+## Mode Pengembangan (Tanpa Docker)
+
+Jika kamu ingin memodifikasi kode secara langsung tanpa Docker, kamu perlu menginstal komponen berikut secara manual:
+
+### Prasyarat Tambahan
+
+| Komponen | Versi | Link Download |
+|----------|-------|---------------|
+| Python | 3.11+ | [python.org/downloads](https://www.python.org/downloads/) |
+| Node.js | 20.x+ | [nodejs.org](https://nodejs.org/) |
+| FFmpeg | 6.0+ | [ffmpeg.org/download](https://ffmpeg.org/download.html) |
+
+### Jalankan Backend
+
+```bash
+# Masuk ke folder backend
+cd ai-clipper/backend
+
+# Buat virtual environment
 python -m venv .venv
-.venv\Scripts\activate   # Windows PowerShell
+
+# Aktifkan virtual environment
+# Windows PowerShell:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+# Instal dependensi Python
 pip install -r requirements.txt
+
+# Set environment variable
+# Windows PowerShell:
+$env:GROQ_API_KEY="gsk_API_KEY_KAMU"
+# macOS/Linux:
+export GROQ_API_KEY="gsk_API_KEY_KAMU"
+
+# Jalankan server backend
 uvicorn main:app --reload
 ```
 
+Backend akan berjalan di `http://localhost:8000`
+
+### Jalankan Frontend
+
+Buka terminal baru:
+
 ```bash
-# Frontend (Node.js)
-cd frontend
+# Masuk ke folder frontend
+cd ai-clipper/frontend
+
+# Instal dependensi Node.js
 npm install
-npm start
+
+# Jalankan server development
+npm run dev
 ```
 
-The frontend dev server runs on `http://localhost:3000` and proxies API calls to `http://localhost:8000`.
+Frontend akan berjalan di `http://localhost:5173`
 
 ---
 
-## Testing
+## Struktur Proyek
 
-### Backend
+```
+AUVI/
+└── ai-clipper/
+    ├── docker-compose.yml      # Orchestrator untuk backend + frontend
+    ├── .env                    # API Key (JANGAN di-commit ke Git!)
+    │
+    ├── backend/
+    │   ├── Dockerfile          # Build instructions untuk container backend
+    │   ├── main.py             # Entry point FastAPI
+    │   ├── database.py         # SQLite database wrapper
+    │   ├── requirements.txt    # Dependensi Python
+    │   ├── routers/
+    │   │   ├── process.py      # Pipeline: download → transkripsi → analisis → potong
+    │   │   ├── upload.py       # Upload file video
+    │   │   └── clips.py        # Endpoint untuk akses klip hasil
+    │   ├── services/
+    │   │   ├── downloader.py   # Download YouTube via yt-dlp
+    │   │   ├── transcriber.py  # Transkripsi via Groq Whisper API
+    │   │   ├── analyzer.py     # Analisis konten via LLM (Llama 3.3 70B)
+    │   │   ├── clipper.py      # Potong video via FFmpeg + face tracking
+    │   │   └── semantic_validator.py  # Validasi kelengkapan informasi klip
+    │   └── models/
+    │       └── schemas.py      # Pydantic models
+    │
+    └── frontend/
+        ├── Dockerfile          # Build instructions untuk container frontend
+        ├── package.json        # Dependensi Node.js
+        ├── vite.config.js      # Konfigurasi Vite
+        └── src/
+            ├── App.jsx         # Router utama
+            ├── pages/          # Halaman: Home, Processing, Dashboard
+            ├── components/     # Komponen UI
+            ├── store/          # State management (Zustand)
+            └── lib/            # API client (Axios)
+```
+
+---
+
+## Troubleshooting
+
+### ❌ `GROQ_API_KEY variable is not set`
+**Solusi:** Pastikan file `.env` ada di folder `ai-clipper/` dan berisi `GROQ_API_KEY=gsk_...`
+
+### ❌ `Download failed: ERROR: Requested format is not available`
+**Solusi:** Ini biasanya terjadi jika yt‑dlp tidak bisa mendekode format YouTube. Pastikan Docker image di‑build ulang:
 ```bash
-cd backend
-pytest
+docker compose down
+docker compose up --build -d
 ```
 
-### Frontend
+### ❌ `Request failed with status code 500`
+**Solusi:** Cek log backend untuk detail error:
 ```bash
-cd frontend
-npm test
+docker logs auvi-backend --tail 50
 ```
 
----
+### ❌ Docker build sangat lambat
+**Solusi:** Build pertama memang lambat karena mengunduh base image. Build selanjutnya menggunakan cache dan akan jauh lebih cepat.
 
-## Deploy to Production
-
-1. **Push the Docker image to a registry** (Docker Hub example):
-   ```bash
-   docker tag aiclipper/backend yourdockerhubusername/aiclipper:latest
-   docker push yourdockerhubusername/aiclipper:latest
-   ```
-2. **Run in a production environment** (Kubernetes, Docker Swarm, etc.) – ensure you set environment variables for any secrets (e.g., API keys) and mount a persistent volume for the SQLite database.
-
----
-
-## Version Control & Open‑Source Release
-
-The project is intended to be open‑source. Follow these steps to initialise the repository and push to GitHub:
-
-1. **Initialise Git (if not already)**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit – AI‑Clipper core"
-   ```
-
-2. **Create a new repository on GitHub** (via the website or the CLI):
-   ```bash
-   gh repo create your‑username/ai-clipper --public --source=. --remote=origin
-   ```
-   *If you prefer the web UI, create a repository named `ai-clipper` and copy the remote URL.*
-
-3. **Push the code**
-   ```bash
-   git branch -M main
-   git push -u origin main
-   ```
-
-4. **Add useful CI badges** to the top of this README (example for GitHub Actions):
-   ```markdown
-   ![Tests](https://github.com/your‑username/ai-clipper/actions/workflows/test.yml/badge.svg)
-   ```
-
-5. **Add a LICENSE** (MIT recommended for permissive open‑source):
-   ```bash
-   curl -o LICENSE https://raw.githubusercontent.com/github/choosealicense.com/gh-pages/_licenses/mit.txt
-   git add LICENSE
-   git commit -m "Add MIT license"
-   git push
-   ```
+### ❌ Port sudah digunakan (port already in use)
+**Solusi:** Hentikan aplikasi lain yang menggunakan port 5173 atau 8000, atau ubah port di `docker-compose.yml`.
 
 ---
 
 ## Contributing
 
-We welcome contributions! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-- Code style (flake8 for Python, eslint for JS)
-- Pull‑request process
-- Issue templates
+Kami menerima kontribusi! Silakan:
+
+1. **Fork** repository ini
+2. Buat **branch** baru (`git checkout -b fitur-baru`)
+3. **Commit** perubahan kamu (`git commit -m "Menambahkan fitur X"`)
+4. **Push** ke branch (`git push origin fitur-baru`)
+5. Buat **Pull Request**
 
 ---
 
-## License
+## Lisensi
 
-This project is licensed under the **MIT License** – see the `LICENSE` file for details.
+Proyek ini dilisensikan di bawah **MIT License** — lihat file `LICENSE` untuk detail.
 
 ---
 
-*Happy clipping!*
-
+*Selamat memotong video! 🎬✨*

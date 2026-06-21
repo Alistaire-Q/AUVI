@@ -1,122 +1,194 @@
 """
-Validator semantik ringan untuk memastikan klip tidak memotong:
-- Daftar yang tidak lengkap
-- Jawaban pertanyaan yang tidak selesai
-Berdasarkan pola bahasa Indonesia umum dalam konten edukatif/informatif.
+Validator pasca‑LLM untuk memastikan:
+- Tiap klip dimulai dan diakhiri di batas kalimat (titik, tanya, seru).
+- Klip tidak memotong daftar atau jawaban yang belum selesai.
+- Klip yang secara topik sama (misalnya hanya pembuka, isi, atau penutup dari satu ide) akan digabung menjadi satu klip utuh.
 """
 import re
 from typing import List, Dict
 
-# Pola yang menunjukkan ada daftar yang harus diselesaikan
+# ----------------------------------------------------------------------
+# Helper: deteksi apakah sebuah kata mengakhiri kalimat
+# ----------------------------------------------------------------------
+def _is_sentence_boundary(word: str) -> bool:
+    return bool(re.search(r'[.!?]$', word))
+
+# ----------------------------------------------------------------------
+# Pola trigger untuk daftar dan jawaban tidak lengkap
+# ----------------------------------------------------------------------
 LIST_TRIGGERS = re.compile(
-    r'\b(ada\s+\d+\s+(faktor|alasan|cara|langkah|jenis|komponen|aspek|elemen|poin|hal)|'
+    r'\b(?:'
+    r'ada\s+\d+\s+(?:faktor|alasan|cara|langkah|jenis|komponen|aspek|elemen|poin|hal)|'
     r'terdiri\s+dari|meliputi|termasuk|mencakup|terdiri\s+seperti|'
     r'pertama|kedua|ketiga|keempat|kelima|keenam|ketujuh|kedelapan|kesembilan|kesepuluh|'
-    r'selanjutnya|kemudian|setelah itu)',
-    re.IGNORECASE
+    r'selanjutnya|kemudian|setelah\s+itu'
+    r')\b',
+    re.IGNORECASE,
 )
 
-# Pola yang menunjukkan jawaban pertanyaan belum selesai
 ANSWER_TRIGGERS = re.compile(
-    r'\b(karena|yaitu|adalah|akibatnya|hasilnya|artinya|maksudnya|sebabnya|maka|akibat)\b',
-    re.IGNORECASE
+    r'\b(karena|yaitu|adalah|akibatnya|hasilnya|artinya|maksudnya|sebabnya|maka|akibat|sefalnya)\b',
+    re.IGNORECASE,
 )
 
-def _find_list_items_in_text(text: str) -> List[str]:
-    """Ekstrak item daftar dari teks (sederhana, berbasis pola seperti 'A, B, dan C')."""
-    # Cari pola seperti: "A, B, dan C" atau "A serta B"
+# ----------------------------------------------------------------------
+# Ekstrak item daftar dari teks (sederhana)
+# ----------------------------------------------------------------------
+def _extract_list_items(text: str) -> List[str]:
+    # Menangkap pola seperti "A, B, dan C" atau "A serta B"
     items = re.findall(r'[A-Z][^,;]*(?:[,;][^,;]*)*', text)
-    return [item.strip() for item in items if item.strip()]
+    return [itm.strip() for itm in items if itm.strip()]
 
-def validate_semantic_completeness(
+# ----------------------------------------------------------------------
+# Fungsi utama
+# ----------------------------------------------------------------------
+def validate_and_fix_clips(
     clips: List[Dict],
     all_words: List[Dict],
 ) -> List[Dict]:
     """
-    Memastikan tiap klip:
-    - Jika mengandung trigger daftar → semua item daftar disebutkan
-    - Jika dimulai dengan pertanyaan → jawaban diberikan selesai (bukan terpotong di tengah penjelasan)
-    Tidak mengubah timestamp jika klip sudah semantik lengkap (hanya menangani kasus jelas).
+    clips: list of dict seperti output analyzer (setiap dict memiliki start, end, words opsional)
+    all_words: daftar seluruh kata dari transkripsi (dengan start/end)
+    Mengembalikan list klip yang:
+    1. Dimulai di awal kalimat dan diakhiri di akhir kalimat.
+    2. Jika mengandung trigger daftar/jawaban belum selesai → diperpanjang sampai lengkap.
+    3. Klip yang secara topik sama (terdeteksi oleh overlap kata kunci) digabung menjadi satu klip utuh.
     """
-    validated = []
+    # --------------------------------------------------------------
+    # 1️⃣  Snap ke batas kalimat & lengkapi daftar/jawaban
+    # --------------------------------------------------------------
+    snapped: List[Dict] = []
     for clip in clips:
         start = clip["start"]
         end   = clip["end"]
 
-        # Ambil kata-kata di dalam rentang (dengan toleransi 0.3 detik)
-        inside = [w for w in all_words if w["start"] >= start - 0.3 and w["end"] <= end + 0.3]
+        # Ambil kata-kata yang berada di dalam rentang (toleransi 0.2 detik)
+        inside = [w for w in all_words if w["start"] >= start - 0.2 and w["end"] <= end + 0.2]
         if not inside:
-            validated.append(clip)
+            snapped.append(clip)
             continue
 
-        full_text = " ".join([w["word"] for w in inside])
+        # ---- Pastikan awal klip berada di awal kalimat ----
+        while start > 0 and not any(
+            _is_sentence_boundary(w["word"]) for w in all_words
+            if w["end"] <= start <= w["end"] + 0.2
+        ):
+            start -= 0.1   # mundur kecil sampai ketemu tanda baca atau awal
 
-        # ---- CEK 1: Apakah ada daftar yang belum lengkap? ----
-        list_match = LIST_TRIGGERS.search(full_text)
+        # ---- Pastikan akhir klip berada di akhir kalimat ----
+        while not any(
+            _is_sentence_boundary(w["word"]) for w in all_words
+            if w["start"] <= end <= w["end"] + 0.2
+        ):
+            end += 0.1     # maju kecil sampai ketemu tanda baca atau akhir transkrip
+
+        # ---- Cek trigger daftar ----
+        inside_text = " ".join([w["word"] for w in inside])
+        list_match = LIST_TRIGGERS.search(inside_text)
         if list_match:
-            # Ambil kalimat yang mengandung trigger daftar
-            trigger_sentence = ""
-            for w in inside:
-                if list_match.start() <= sum(len(x["word"]) + 1 for x in inside[:inside.index(w)]) < list_match.end():
-                    trigger_sentence += w["word"] + " "
-            trigger_sentence = trigger_sentence.strip()
-
-            # Ekstrak semua item daftar yang disebutkan dalam seluruh transkrip (bukan hanya di klip)
-            all_text = " ".join([w["word"] for w in all_words])
-            all_items = _find_list_items_in_text(all_text)
-            clip_items = _find_list_items_in_text(full_text)
-
-            # Jika klip menyebutkan FEWER item daripada yang ada dalam konteks penuh → kemungkinan daftar terpotong
-            if all_items and len(clip_items) < len(all_items) * 0.8:  # toleransi 20% untuk kata ganti
-                # Coba extend end_time sampai semua item daftar tercapai
-                items_found = set(clip_items)
-                target_items = set(all_items)
-                # Mundur ke awal kalimat trigger untuk mulai pencarian dari sana
-                search_start_idx = next(i for i, w in enumerate(all_words) if w["start"] >= start)
-                for i in range(search_start_idx, len(all_words)):
-                    word = all_words[i]["word"]
-                    # Cek apakah kata ini adalah bagian dari item daftar yang belum ditemukan
-                    for item in target_items - items_found:
-                        if item.lower() in word.lower():
-                            items_found.add(item)
+            # Hitung semua item daftar yang seharusnya ada dalam transkrip penuh
+            full_text = " ".join([w["word"] for w in all_words])
+            all_items = set(_extract_list_items(full_text))
+            clip_items = set(_extract_list_items(inside_text))
+            missing = all_items - clip_items
+            if missing:
+                # Majukan end_time sampai semua item daftar tercapai
+                # Cari posisi kata terakhir yang berada di dalam clip
+                last_idx = next(
+                    i for i, w in enumerate(all_words)
+                    if w["start"] >= inside[-1]["start"]
+                )
+                for i in range(last_idx, len(all_words)):
+                    w = all_words[i]
+                    # Cek apakah kata ini termasuk salah satu item yang masih missing
+                    for itm in list(missing):
+                        if itm.lower() in w["word"].lower():
+                            missing.remove(itm)
                             break
-                    # Jika semua item ditemukan, hentikan pencarian
-                    if items_found == target_items:
-                        end = all_words[i]["end"] + 0.5  # tambah jeda kecil
+                    if not missing:
+                        end = w["end"] + 0.2   # jeda kecil setelah kata terakhir
                         break
-                # Jika masih belum selesai, extend sampai akhir kalimat terakhir di transkrip (fallback)
-                if items_found != target_items:
+                # Fallback: jika masih missing, perpanjang sampai akhir transkrip
+                if missing:
                     end = all_words[-1]["end"]
 
-        # ---- CEK 2: Apakah dimulai dengan pertanyaan tapi jawaban tidak selesai? ----
-        first_few_words = " ".join([w["word"] for w in inside[:5]]).lower()
+        # ---- Cek trigger jawaban belum selesai ----
+        first_few = " ".join([w["word"] for w in inside[:5]]).lower()
         question_starters = ["apa", "kenapa", "bagaimana", "kapan", "dimana", "siapa", "berapa", "mana"]
-        if any(first_few_words.startswith(q) for q in question_starters):
-            # Cek apakah klip berakhir dengan trigger jawaban yang belum selesai
+        if any(first_few.startswith(q) for q in question_starters):
             last_words = " ".join([w["word"] for w in inside[-3:]]).lower()
             if ANSWER_TRIGGERS.search(last_words):
-                # Extend end_time sampai menemukan kalimat yang terlihat seperti penutup jawaban
-                search_start_idx = next(i for i, w in enumerate(all_words) if w["start"] >= start)
-                for i in range(search_start_idx, len(all_words)):
-                    # Cek kalimat ini apakah mengandung tanda titik/tanya/seru atau frasa penutup
-                    word = all_words[i]["word"]
-                    if re.search(r'[.!?]$', word) or \
-                       any(phrase in word.lower() for phrase in ["seperti", "sesudah itu", "akhirnya", "intinya"]):
-                        end = all_words[i]["end"]
+                # Majukan sampai menemukan kalimat yang terlihat seperti penutup jawaban
+                start_idx = next(
+                    i for i, w in enumerate(all_words)
+                    if w["start"] >= inside[0]["start"]
+                )
+                for i in range(start_idx, len(all_words)):
+                    w = all_words[i]
+                    if _is_sentence_boundary(w["word"]) or \
+                       any(phrase in w["word"].lower() for phrase in ["inti", "kesimpulan", "akhirnya", "seperti itu"]):
+                        end = w["end"]
                         break
-                # Fallback: extend sampai 5 detik setelah terakhir kata yang ditemukan
                 else:
-                    end = all_words[search_start_idx]["end"] + 5.0
+                    end = all_words[-1]["end"]
 
         # Pastikan end tidak menurun dibawah start
         if end <= start:
-            end = start + 1.0  # minimal 1 detik agar tidak error
+            end = start + 1.0
 
-        # Update clip
-        clip["start"] = round(start, 3)
-        clip["end"]   = round(end,   3)
-        clip["words"] = [w for w in all_words if w["start"] >= clip["start"] - 0.3 and w["end"] <= clip["end"] + 0.3]
+        new_start = round(start, 3)
+        new_end   = round(end, 3)
+        new_words = [w for w in all_words
+                     if w["start"] >= new_start - 0.2
+                        and w["end"]   <= new_end   + 0.2]
 
-        validated.append(clip)
+        # Pertahankan metadata asli dari klip (title, score, category, dll.)
+        snapped_clip = dict(clip)
+        snapped_clip["start"] = new_start
+        snapped_clip["end"]   = new_end
+        snapped_clip["duration"] = round(new_end - new_start, 3)
+        snapped_clip["words"] = new_words
+        snapped.append(snapped_clip)
 
-    return validated
+    # --------------------------------------------------------------
+    # 2️⃣  Gabungkan klip yang terdeteksi sebagai bagian dari satu topik
+    # --------------------------------------------------------------
+    merged: List[Dict] = []
+    i = 0
+    while i < len(snapped):
+        cur = dict(snapped[i])  # copy agar tidak mutate original
+        # Coba gabungkan dengan klip berikutnya jika mereka berbagi cukup kata kunci
+        j = i + 1
+        while j < len(snapped):
+            nxt = snapped[j]
+            # Hitung overlap kata (skip stopwords sederhana)
+            cur_set = set([w["word"].lower() for w in cur.get("words", [])
+                           if len(w["word"]) > 3])
+            nxt_set = set([w["word"].lower() for w in nxt.get("words", [])
+                           if len(w["word"]) > 3])
+            if not cur_set or not nxt_set:
+                break
+            overlap = len(cur_set & nxt_set)
+            # Jika overlap cukup besar (≥30% dari yang lebih kecil) maka gabungkan
+            if overlap >= 0.3 * min(len(cur_set), len(nxt_set)):
+                # Gabungkan rentang waktu
+                cur["end"] = nxt["end"]
+                cur["duration"] = round(cur["end"] - cur["start"], 3)
+                cur["words"] = [w for w in all_words
+                                if w["start"] >= cur["start"] - 0.2
+                                   and w["end"]   <= cur["end"]   + 0.2]
+                j += 1
+            else:
+                break
+        merged.append(cur)
+        i = j
+
+    # Re-index klip setelah merge
+    for idx, clip in enumerate(merged):
+        clip["index"] = idx + 1
+        # Pastikan field wajib ada
+        clip.setdefault("score", 80)
+        clip.setdefault("category", "Key Point")
+        clip.setdefault("title", f"Clip {idx + 1}")
+
+    return merged

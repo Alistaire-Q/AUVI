@@ -52,7 +52,8 @@ def _detect_primary_face_x(
     face_cascade = cv2.CascadeClassifier(cascade_path)
 
     duration = end - start
-    num_samples = 10
+    # Optimasi: hanya sample 3 frame (awal, tengah, akhir) untuk kecepatan
+    num_samples = 3
     step = max(0.5, duration / num_samples)
 
     face_x_centers = []
@@ -233,6 +234,10 @@ def generate_clip(
         video_filter = f"{crop_filter},{scale_filter}"
 
     # ── 4. Execute FFmpeg — cut EXACTLY at LLM timestamps ──
+    # Optimasi kecepatan:
+    # - preset=ultrafast → 2-3x lebih cepat dari "fast"
+    # - crf=28 → file lebih kecil, kualitas masih cukup untuk media sosial
+    # - threads=0 → gunakan semua CPU core yang tersedia
     try:
         stream = ffmpeg.input(source_path, ss=start, to=end)
         stream = ffmpeg.output(
@@ -240,9 +245,10 @@ def generate_clip(
             vf=video_filter,
             vcodec="libx264",
             acodec="aac",
-            preset="fast",
-            crf=23,
+            preset="ultrafast",
+            crf=28,
             movflags="faststart",
+            threads=0,
         )
         ffmpeg.run(stream, overwrite_output=True, quiet=True)
 
@@ -258,8 +264,9 @@ def generate_clip(
                     vf=f"{crop_filter},{scale_filter}",
                     vcodec="libx264",
                     acodec="aac",
-                    preset="fast",
-                    crf=23,
+                    preset="ultrafast",
+                    crf=28,
+                    threads=0,
                 )
                 ffmpeg.run(stream, overwrite_output=True, quiet=True)
             except ffmpeg.Error as e2:

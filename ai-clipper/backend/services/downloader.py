@@ -18,6 +18,14 @@ def get_video_info(url: str) -> dict:
         "quiet": True,
         "no_warnings": True,
         "extract_flat": False,
+        # Dengan deno terinstal, yt-dlp otomatis bisa mendekode semua format
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+        },
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -63,13 +71,31 @@ def download_youtube(
             progress_callback(100, "Download complete, merging formats...")
 
     ydl_opts = {
-        "format": "bestvideo[height<=720]+bestaudio/best[height<=720]",
+        # Dengan deno JS runtime terinstal, yt-dlp bisa mendekode semua format YouTube.
+        # Fallback chain: 720p terpisah → resolusi apapun terpisah → single stream
+        "format": (
+            "bestvideo[height<=720]+bestaudio/"
+            "bestvideo+bestaudio/"
+            "best"
+        ),
         "outtmpl": output_path,
         "merge_output_format": "mp4",
         "progress_hooks": [_progress_hook],
         "quiet": True,
         "no_warnings": True,
         "overwrites": True,
+        # Biarkan yt-dlp menggunakan player client default (dengan deno,
+        # signature decoding bekerja otomatis untuk semua client)
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+        },
+        # Retry otomatis jika ada error sementara
+        "retries": 10,
+        "fragment_retries": 10,
         "postprocessors": [
             {
                 "key": "FFmpegVideoConvertor",

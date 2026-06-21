@@ -35,9 +35,21 @@ export default function YouTubeInput() {
     try {
       const result = await processUrl(url, settings);
       
+      // Fetch judul YouTube dari backend (sudah tersimpan saat get_video_info)
+      let videoTitle = url;
+      try {
+        const { getJob } = await import('../lib/api');
+        const jobInfo = await getJob(result.job_id);
+        if (jobInfo.title && jobInfo.title !== 'Untitled') {
+          videoTitle = jobInfo.title;
+        }
+      } catch {
+        // Fallback ke URL jika gagal fetch judul
+      }
+
       addRecentProject({
         id: result.job_id,
-        title: url,
+        title: videoTitle,
         source: 'youtube',
         date: new Date().toISOString(),
       });
