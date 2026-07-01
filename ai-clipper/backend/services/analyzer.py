@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 DEFAULT_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 HTTP_TIMEOUT = 120.0
+# Output LLM berupa JSON daftar klip. max_tokens lama (3000) sering terpotong
+# di tengah objek JSON → json.loads gagal → analyzer gagal → job failed (500).
+# Naikkan batas agar JSON utuh; model tetap bebas memendekkan jawaban.
+LLM_MAX_TOKENS = 8000
 
 
 def _get_llm_config() -> dict:
@@ -91,7 +95,35 @@ def _build_transcript_text(words: list[dict]) -> str:
 # ──────────────────────────────────────────────
 
 SYSTEM_PROMPT = """\
-Anda adalah Editor Video Senior yang bertugas HANYA memotong video menjadi klip yang masing-masing berisi **SATU KONSEP INFORMASI LENGKAP** yang dapat dipahami SEMPURNA tanpa menonton klip lain.
+Anda adalah Editor Video Senior yang bertugas memotong video menjadi klip-klip terpisah, masing-masing berisi SATU INFORMASI LENGKAP.
+
+═══════════════════════════════════════
+3 ATURAN UTAMA (WAJIB DIPATUHI — TIDAK ADA PENGECUALIAN)
+═══════════════════════════════════════
+
+[ATURAN 1] — SEGMENTASI TEKS MENJADI BEBERAPA KLIP TERPISAH
+• Transkrip input HARUS disegmentasi menjadi klip-klip terpisah.
+• Setiap klip WAJIB berisi SATU ide/topik/informasi yang UTUH dan LENGKAP.
+• Klip tidak boleh dimulai di tengah penjelasan suatu ide.
+• Klip tidak boleh diakhiri sebelum pembicara menyelesaikan penjelasan satu ide.
+• Jika pembicara berpindah ke topik BARU, klip sebelumnya HARUS berakhir TEPAT sebelum topik baru dimulai.
+
+[ATURAN 2] — WAJIB MENYERTAKAN PROPERTI "Judul Klip" DI BARIS PERTAMA SETIAP SEGMEN
+• Setiap segmen klip WAJIB diawali dengan properti "Judul Klip" (string) sebagai elemen pertama.
+• Judul Klip HARUS ada di setiap objek klip — TIDAK BOLEH ADA KLIP TANPA JUDUL.
+
+[ATURAN 3] — FORMAT JUDUL HARUS MENJADI HOOK YANG DESKRIPTIF
+• Judul Klip WAJIB menjadi HOOK — kalimat pembuka yang membuat penonton PENASARAN dan ingin menonton.
+• Judul Klip WAJIB tetap deskriptif — audiens harus langsung paham topik bahasan dari judul.
+• Judul HARUS dirangkum dari inti pembahasan klip, BUKAN sekadar menyalin kalimat pertama klip.
+• Contoh judul HOOK yang BAIK:
+  - "Ternyata inflasi bisa bikin uangmu hilang — ini penjelasannya"
+  - "Investasi saham itu mudah kalau tahu 3 langkah ini"
+  - "Krisis energi global 2024 — penyebab yang jarang diketahui"
+• Contoh judul BURUK (hanya copy kalimat pertama klip):
+  - "Halo semuanya kali ini kita akan membahas tentang" ❌
+  - "Jadi gini guys gua mau jelasin sesuatu nih" ❌
+• Gunakan bahasa natural & informatif, maksimal 15 kata.
 
 ═══════════════════════════════════════
 ATURAN MUTLAK PENENTUAN TIMESTAMP (TIDAK ADA PENGECUALIAN)
@@ -140,14 +172,21 @@ Balas HANYA dengan JSON object berikut (tanpa markdown, tanpa penjelasan tambaha
 {
   "clips": [
     {
-      "title": "Judul yang sangat memancing klik namun tetap mengalahkan satu inti informasi",
+      "Judul Klip": "Judul deskriptif yang jelas memberi tahu penonton APA yang dibahas klip ini (misal: 'Penjelasan inflasi dan dampaknya', '3 cara memulai investasi', 'Krisis energi global 2024')",
       "start_time": 83.5,
       "end_time": 417.2
     }
   ]
 }
 
-ATURAN FORMAT:
+ATURAN FORMAT JUDUL (HOOK):
+• "Judul Klip" WAJIB menjadi HOOK — merangkum inti bahasan dengan cara yang membuat penasaran.
+• "Judul Klip" WAJIB menjadi properti PERTAMA di setiap objek klip dalam JSON.
+• "Judul Klip" HARUS dirangkum dari isi klip, BUKAN menyalin kalimat pertama dari transkrip.
+• Audiens harus langsung paham isi klip dari judul — judul bukan sekadar kalimat pembuka video.
+• Gunakan bahasa natural dan hook yang engaging, maksimal 15 kata.
+
+ATURAN FORMAT TIMESTAMP:
 • start_time dan end_time dalam DETIK (float) – diambil langsung dari timestamp transkripsi.
 • start_time HARUS tepat di awal kalimat PENGENALAN satu ide inti.
 • end_time HARUS tepat di akhir kalimat KESIMPULAN/IMPLIKASI dari ide tersebut.
@@ -215,7 +254,7 @@ def find_best_clips(
                     {"role": "user", "content": user_prompt},
                 ],
                 "temperature": 0.2,
-                "max_tokens": 3000,
+                "max_tokens": LLM_MAX_TOKENS,
             },
             timeout=HTTP_TIMEOUT,
         )
@@ -226,6 +265,7 @@ def find_best_clips(
 
         result = response.json()
         llm_text = result["choices"][0]["message"]["content"].strip()
+        finish_reason = result.get("choices", [{}])[0].get("finish_reason", "")
 
         logger.info(f"LLM raw response (first 500 chars): {llm_text[:500]}")
 
@@ -235,7 +275,7 @@ def find_best_clips(
             llm_text = llm_text.rsplit("```", 1)[0]
             llm_text = llm_text.strip()
 
-        parsed = json.loads(llm_text)
+        parsed = _safe_json_load(llm_text)
 
         # Handle both {"clips": [...]} and bare [...] formats
         if isinstance(parsed, dict) and "clips" in parsed:
@@ -244,6 +284,17 @@ def find_best_clips(
             clips_raw = parsed
         else:
             raise ValueError(f"Unexpected JSON structure: {type(parsed)}")
+
+        # Jika LLM terpotong di tengah output (finish_reason=length) dan tidak
+        # ada klip sama sekali yang berhasil di-parse, kita retry sekali dengan
+        # instruksi eksplisit. Jangan langsung fallback ke pembagian-rata yang
+        # memotong informasi.
+        if finish_reason == "length" and not clips_raw:
+            logger.warning(
+                "LLM output truncated (finish_reason=length) with no parsed clips. "
+                "Retrying with fewer clips requested."
+            )
+            clips_raw = _retry_with_fewer_clips(cfg, transcript_text, total_duration, max(max_clips - 2, 2))
 
         logger.info(f"LLM returned {len(clips_raw)} clips")
 
@@ -292,7 +343,7 @@ def find_best_clips(
                 "duration": round(duration, 3),
                 "score": max(60, 100 - i * 8),
                 "category": raw.get("category", "Key Point"),
-                "title": raw.get("title", f"Clip {i+1}"),
+                "title": raw.get("Judul Klip", raw.get("title", f"Clip {i+1}")),
                 "words": clip_words,
             })
         except (KeyError, ValueError, TypeError) as e:
@@ -323,6 +374,216 @@ def _to_seconds(value) -> float:
         elif len(parts) == 3:
             return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
     return 0.0
+
+
+def _safe_json_load(text: str):
+    """
+    Parse JSON dari output LLM. Jika terpotong di tengah, coba pulihkan:
+    - tutup string & objek yang belum selesai,
+    - ambil hanya objek klip yang lengkap (yang sudah punya start_time & end_time).
+    Mengembalikan dict/list hasil parse, atau None bila benar-benar tak terpulihkan.
+    """
+    # 1. Coba parse langsung.
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 2. Coba ekstrak blok JSON pertama (antara { atau [ pertama hingga pasangannya).
+    start = -1
+    for i, ch in enumerate(text):
+        if ch in "{[":
+            start = i
+            break
+    if start < 0:
+        return None
+
+    open_ch = text[start]
+    close_ch = "}" if open_ch == "{" else "]"
+    # Cari posisi penutup terakhir yang valid dengan menutup bertahap.
+    depth = 0
+    last_valid_end = -1
+    in_string = False
+    escape = False
+    for j in range(start, len(text)):
+        ch = text[j]
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == open_ch:
+            depth += 1
+        elif ch == close_ch:
+            depth -= 1
+            if depth == 0:
+                last_valid_end = j + 1
+
+    # 3. Coba potong pada penutup seimbang terakhir.
+    candidates = []
+    if last_valid_end > 0:
+        candidates.append(text[start:last_valid_end])
+    # 4. Fallback: tutup paksa string/struktur terpotong.
+    fixed = text[start:]
+    if in_string:
+        fixed += '"'
+    # Tutup kurung yang masih terbuka.
+    missing_close = 0
+    depth = 0
+    in_string = False
+    escape = False
+    for ch in fixed:
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == open_ch:
+            depth += 1
+        elif ch == close_ch:
+            depth = max(0, depth - 1)
+    missing_close = depth
+    fixed += close_ch * missing_close
+    candidates.append(fixed)
+
+    for cand in candidates:
+        try:
+            return json.loads(cand)
+        except json.JSONDecodeError:
+            continue
+
+    # 5. Pemulihan per-objek: ambil tiap objek {...} yang lengkap & valid
+    #    (punya start_time & end_time) sebelum titik potong. Ini menyelamatkan
+    #    klip-klip yang sudah utuh, sehingga TIDAK perlu fallback pembagian-rata
+    #    yang justru memotong informasi.
+    per_obj = _extract_complete_clip_objects(text)
+    if per_obj:
+        logger.info(
+            f"Recovered {len(per_obj)} complete clip(s) from truncated JSON "
+            f"via per-object extraction."
+        )
+        return {"clips": per_obj}
+
+    return None
+
+
+def _extract_complete_clip_objects(text: str) -> list:
+    """
+    Ekstrak semua objek JSON {...} yang LENGKAP (pasangan tutup ditemukan) dan
+    punya start_time/end_time valid — pada level berapa pun di dalam struktur.
+    Tahan terhadap objek luar yang tidak pernah ditutup akibat output terpotong:
+    kita tetap menangkap objek-objek dalam (mis. elemen array "clips") yang
+    sudah utuh sebelum titik potong.
+    """
+    objs = []
+    n = len(text)
+    i = 0
+    while i < n:
+        if text[i] != "{":
+            i += 1
+            continue
+        # Cari pasangan tutup objek pada level ini (skip string + nesting).
+        depth = 0
+        in_string = False
+        escape = False
+        j = i
+        obj_text = None
+        while j < n:
+            ch = text[j]
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+                j += 1
+                continue
+            if ch == '"':
+                in_string = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    obj_text = text[i:j + 1]
+                    break
+            j += 1
+        if obj_text:
+            try:
+                obj = json.loads(obj_text)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                obj = None
+            if isinstance(obj, dict):
+                start_v = _to_seconds(obj.get("start_time", obj.get("start")))
+                end_v = _to_seconds(obj.get("end_time", obj.get("end")))
+                if start_v < end_v and end_v > 0:
+                    objs.append(obj)
+            # Lanjut memindai SETELAH objek ini (bukan di dalamnya) agar
+            # tetap menemukan objek seberanya meski yang ini tidak valid.
+            i = j + 1
+        else:
+            # Objek tidak pernah ditutup di posisi ini.
+            # Geser maju per-karakter supaya pemindai tetap bisa menangkap
+            # objek lengkap BERIKUTNYA yang muncul sesudahnya (mis. bila ada
+            # koma lalu objek utuh lain, atau untuk keluar dari objek luar
+            # yang tak berpenutup).
+            i += 1
+    return objs
+
+
+def _retry_with_fewer_clips(cfg: dict, transcript_text: str, total_duration: float, fewer: int):
+    """Retry LLM sekali dengan jumlah klip lebih sedikit bila output terpotong."""
+    user_prompt = (
+        f"Analisis transkrip berikut dan temukan {fewer} segmen terbaik. "
+        f"WAJIB kembalikan JSON LENGKAP — jangan terpotong.\n\n"
+        f"TRANSKRIP VIDEO (total durasi: {total_duration:.1f} detik):\n"
+        f"{transcript_text}"
+    )
+    try:
+        response = httpx.post(
+            f"{cfg['base_url']}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {cfg['api_key']}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": cfg["model"],
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "temperature": 0.2,
+                "max_tokens": LLM_MAX_TOKENS,
+            },
+            timeout=HTTP_TIMEOUT,
+        )
+        if response.status_code != 200:
+            logger.error(f"LLM retry error {response.status_code}: {response.text}")
+            return []
+        llm_text = response.json()["choices"][0]["message"]["content"].strip()
+        if llm_text.startswith("```"):
+            llm_text = llm_text.split("\n", 1)[1]
+            llm_text = llm_text.rsplit("```", 1)[0].strip()
+        parsed = _safe_json_load(llm_text)
+        if isinstance(parsed, dict) and "clips" in parsed:
+            return parsed["clips"]
+        if isinstance(parsed, list):
+            return parsed
+    except Exception as e:
+        logger.error(f"LLM retry failed: {e}")
+    return []
+
 
 
 def _fallback_find_clips(
@@ -357,6 +618,14 @@ def _fallback_find_clips(
             start = clip_words[0]["start"]
             end = clip_words[-1]["end"]
 
+        # Buat judul hook dari kata-kata pertama klip yang informatif
+        hook_words = [w["word"] for w in clip_words[:20]]
+        hook_text = " ".join(hook_words).strip()
+        # Ambil maksimal 12 kata pertama sebagai hook
+        hook_title = " ".join(hook_text.split()[:12])
+        if hook_title and not hook_title.endswith((".", "!", "?")):
+            hook_title += "..."
+
         result.append({
             "index": i + 1,
             "start": round(start, 3),
@@ -364,7 +633,7 @@ def _fallback_find_clips(
             "duration": round(end - start, 3),
             "score": 50,
             "category": "Key Point",
-            "title": " ".join(w["word"] for w in clip_words[:15]),
+            "title": hook_title or f"Bagian {i + 1}",
             "words": clip_words,
         })
 

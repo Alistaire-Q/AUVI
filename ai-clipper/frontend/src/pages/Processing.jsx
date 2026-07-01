@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, AudioLines } from 'lucide-react';
 import ProcessingSteps from '../components/ProcessingSteps';
 import { subscribeToProgress, deleteJob, getJob } from '../lib/api';
 import useClipStore from '../store/useClipStore';
+import Logo from '../components/Logo';
 
 export default function Processing() {
   const { jobId } = useParams();
@@ -56,7 +57,7 @@ export default function Processing() {
           status: 'completed',
           error: null,
         });
-        
+
         // Short delay for the user to see 100% completion before redirecting
         setTimeout(() => {
           navigate(`/dashboard/${jobId}`);
@@ -91,21 +92,27 @@ export default function Processing() {
 
   return (
     <div className="min-h-screen bg-base relative flex flex-col">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-accent-1/5 to-transparent pointer-events-none"></div>
+      {/* Ambient backdrop */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-accent-1/15 blur-[140px]" />
+        <div className="absolute inset-0 auvi-grid-bg opacity-25 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
+      </div>
 
       {/* Header */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-        <button 
-          onClick={() => navigate('/')}
-          className="btn-secondary py-2 border-transparent hover:border-border"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
-        
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 py-5 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <Logo size={32} showWordmark={false} />
+          <button
+            onClick={() => navigate('/')}
+            className="btn-secondary py-2 border-transparent hover:border-border"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back</span>
+          </button>
+        </div>
+
         {processing.status !== 'completed' && processing.status !== 'failed' && (
-          <button 
+          <button
             onClick={handleCancel}
             disabled={cancelling}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-danger hover:bg-danger/10 transition-colors text-sm font-medium"
@@ -116,28 +123,40 @@ export default function Processing() {
         )}
       </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 flex-grow flex flex-col items-center justify-center w-full max-w-4xl mx-auto px-6 py-12">
-        <div className="text-center mb-16 animate-fade-in">
-          <h1 className="text-3xl font-bold text-text-primary mb-3">
-            {processing.status === 'failed' ? 'Processing Failed' : 'Analyzing Video...'}
-          </h1>
-          <p className="text-text-muted">
-            {jobInfo?.title || 'Your video'} is being processed by AUVI.
-          </p>
-        </div>
-
-        {/* The blurry placeholder thumbnail */}
-        {jobInfo?.source_type === 'youtube' && processing.step === 1 && (
-          <div className="w-full max-w-xl mx-auto mb-12 aspect-video bg-surface rounded-xl border border-border overflow-hidden relative shadow-2xl animate-pulse">
-             <div className="absolute inset-0 flex items-center justify-center text-text-muted">
-               Downloading from YouTube...
-             </div>
+      {/* Source summary */}
+      {jobInfo && (
+        <div className="relative z-10 mx-auto w-full max-w-5xl px-4 md:px-6">
+          <div className="mx-auto flex max-w-md items-center gap-3 rounded-xl border border-border bg-card/60 px-4 py-2.5 backdrop-blur">
+            <div className="grid size-8 shrink-0 place-items-center rounded-md bg-surface text-text-muted">
+              <AudioLines className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-xs font-medium text-text-primary">{jobInfo.title || 'Your video'}</p>
+              <p className="truncate text-[11px] text-text-muted">
+                {jobInfo.source_type === 'youtube' ? 'YouTube' : 'Upload'} · job {jobId?.slice(0, 8)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-semibold text-accent-1">{processing.progress}%</p>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Stepper component receives the global processing state */}
-        <ProcessingSteps 
+      {/* The blurry placeholder thumbnail while downloading */}
+      {jobInfo?.source_type === 'youtube' && processing.step === 1 && (
+        <div className="relative z-10 mx-auto w-full max-w-xl px-4 mt-6">
+          <div className="aspect-video bg-surface rounded-xl border border-border overflow-hidden relative shadow-2xl animate-pulse">
+            <div className="absolute inset-0 flex items-center justify-center text-text-muted">
+              Downloading from YouTube...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="relative z-10 flex-grow flex flex-col items-center justify-center w-full px-4 md:px-6 py-10">
+        <ProcessingSteps
           currentStep={processing.step}
           progress={processing.progress}
           message={processing.message}

@@ -7,6 +7,26 @@ import os
 import logging
 from contextlib import asynccontextmanager
 
+# ── Load .env BEFORE any service import ────────────────────────────
+# The .env file lives at the project root (ai-clipper/.env), one level
+# above the backend package. Load it so GROQ_API_KEY / LLM_* are visible
+# to transcriber.py & analyzer.py at runtime.
+try:
+    from dotenv import load_dotenv
+
+    _ENV_CANDIDATES = [
+        os.path.join(os.path.dirname(__file__), "..", ".env"),   # ai-clipper/.env
+        os.path.join(os.path.dirname(__file__), ".env"),         # backend/.env
+        os.path.join(os.getcwd(), ".env"),                       # cwd fallback
+    ]
+    for _cand in _ENV_CANDIDATES:
+        if os.path.isfile(_cand):
+            load_dotenv(_cand)
+            break
+except ImportError:
+    # python-dotenv not installed → rely on the actual process environment.
+    pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,11 +43,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _check_required_env() -> None:
+    """Warn loudly if the API key is missing — the most common 500 cause."""
+    api_key = (
+        os.environ.get("LLM_API_KEY", "").strip()
+        or os.environ.get("GROQ_API_KEY", "").strip()
+    )
+    if not api_key:
+        logger.warning(
+            "⚠️  GROQ_API_KEY / LLM_API_KEY is NOT set. "
+            "Transcription & analysis will fail. "
+            "Put it in ai-clipper/.env (free key: https://console.groq.com)."
+        )
+    else:
+        logger.info("LLM API key detected (transcription & analysis ready).")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Startup
     logger.info("Initializing AUVI backend...")
+    _check_required_env()
 
     # Create database tables
     init_db()

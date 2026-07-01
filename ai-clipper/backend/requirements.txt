@@ -11,3 +11,4 @@ sse-starlette==2.1.0
 sqlalchemy==2.0.32
 pydantic==2.8.0
 numpy<2.0.0
+python-dotenv

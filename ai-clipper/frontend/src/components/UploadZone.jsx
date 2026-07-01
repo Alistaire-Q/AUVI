@@ -1,10 +1,10 @@
 /**
- * UploadZone — Drag & drop file upload area with animated border,
+ * UploadZone — Drag & drop file upload area with animated gradient border,
  * file validation, and upload progress bar.
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, FileVideo, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, FileVideo, AlertCircle } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 import { uploadFile } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
@@ -116,7 +116,7 @@ export default function UploadZone() {
   return (
     <div className="w-full">
       <div
-        className={`upload-zone relative flex flex-col items-center justify-center p-12 cursor-pointer transition-all ${
+        className={`upload-zone relative flex flex-col items-center justify-center px-6 py-10 cursor-pointer transition-all ${
           dragOver ? 'drag-over' : ''
         } ${uploading ? 'pointer-events-none opacity-70' : ''}`}
         onDragOver={handleDragOver}
@@ -139,11 +139,11 @@ export default function UploadZone() {
 
         {uploading ? (
           <div className="flex flex-col items-center gap-4 animate-fade-in">
-            <div className="w-16 h-16 rounded-2xl bg-accent-1/10 flex items-center justify-center">
-              <FileVideo className="w-8 h-8 text-accent-1 animate-pulse" />
+            <div className="w-14 h-14 rounded-2xl auvi-gradient-brand auvi-glow-soft flex items-center justify-center">
+              <FileVideo className="w-7 h-7 text-white animate-pulse" />
             </div>
             <div className="text-center">
-              <p className="text-text-primary font-semibold text-lg mb-1">
+              <p className="text-text-primary font-semibold text-base mb-1">
                 Uploading {selectedFile?.name}
               </p>
               <p className="text-text-muted text-sm">
@@ -160,18 +160,29 @@ export default function UploadZone() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent-1/20 to-accent-2/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Upload className="w-10 h-10 text-accent-1" />
+          <div className="flex flex-col items-center gap-3">
+            <div className="grid w-12 h-12 place-items-center rounded-full bg-accent-1/15 text-accent-1">
+              <Upload className="w-5 h-5" />
             </div>
             <div className="text-center">
-              <p className="text-text-primary font-semibold text-lg mb-1">
-                Drop video here or click to upload
+              <p className="text-text-primary font-medium text-sm">
+                Drop a video file or click to browse
               </p>
-              <p className="text-text-muted text-sm">
-                Supports MP4, MOV, AVI, WebM • Max 500MB
+              <p className="mt-1 text-text-muted text-xs">
+                Up to 500MB · MP4, MOV, AVI, WebM
               </p>
             </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClick();
+              }}
+              className="btn-primary py-2 px-4 text-sm shadow-none gap-1.5"
+            >
+              <Upload className="w-4 h-4" />
+              Choose file
+            </button>
           </div>
         )}
       </div>

@@ -2,19 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design System CSS Custom Properties ─── */
+/* ─── Design System CSS Custom Properties ───
+   Repointed to the AUVI Z.ai oklch palette (purple → magenta → orange). */
 :root {
-  --bg-base: #0A0A0F;
-  --bg-surface: #12121A;
-  --bg-card: #1A1A26;
-  --bg-card-hover: #1F1F30;
-  --accent-1: #6366F1;
-  --accent-2: #8B5CF6;
-  --accent-glow: #4F46E5;
-  --text-primary: #F8FAFC;
-  --text-muted: #94A3B8;
-  --text-hint: #475569;
-  --border: #1E1E2E;
+  --bg-base: oklch(0.13 0.012 285);
+  --bg-surface: oklch(0.15 0.013 285);
+  --bg-card: oklch(0.17 0.015 285);
+  --bg-card-hover: oklch(0.21 0.02 285);
+  --accent-1: oklch(0.62 0.24 320);   /* primary purple */
+  --accent-2: oklch(0.7 0.2 350);     /* magenta */
+  --accent-3: oklch(0.78 0.18 25);    /* warm orange (for gradient tail) */
+  --accent-glow: oklch(0.62 0.24 320);
+  --text-primary: oklch(0.97 0.005 285);
+  --text-muted: oklch(0.65 0.02 285);
+  --text-hint: oklch(0.45 0.015 285);
+  --border: oklch(0.27 0.015 285 / 60%);
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
@@ -51,38 +53,51 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-surface);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: oklch(0.35 0.05 320 / 40%);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-hint);
+  background: oklch(0.45 0.08 320 / 70%);
 }
 
 /* ─── Custom Utility Classes ─── */
 @layer components {
-  /* Gradient text */
+  /* Gradient text — magenta → purple → orange */
   .text-gradient {
-    background: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+    background-image: linear-gradient(
+      100deg,
+      oklch(0.72 0.24 320) 0%,
+      oklch(0.74 0.22 350) 45%,
+      oklch(0.78 0.18 30) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    color: transparent;
   }
 
   /* Glass morphism panel */
   .glass-panel {
-    background: rgba(18, 18, 26, 0.8);
+    background: rgba(23, 24, 32, 0.8);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
   }
 
-  /* Glow button */
+  /* Glow button — 4-stop brand gradient */
   .btn-primary {
-    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.55 0.26 295) 0%,
+      oklch(0.62 0.24 320) 35%,
+      oklch(0.66 0.22 350) 70%,
+      oklch(0.72 0.2 25) 100%
+    );
     color: white;
     font-weight: 600;
     padding: 0.625rem 1.5rem;
@@ -90,7 +105,7 @@ body {
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 0 20px oklch(0.62 0.24 320 / 0.25);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -98,8 +113,9 @@ body {
   }
 
   .btn-primary:hover {
-    box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 30px oklch(0.62 0.24 320 / 0.5);
     transform: translateY(-1px);
+    opacity: 0.92;
   }
 
   .btn-primary:active {
@@ -136,7 +152,7 @@ body {
 
   /* Input field */
   .input-field {
-    background: var(--bg-card);
+    background: oklch(0.22 0.015 285 / 60%);
     color: var(--text-primary);
     border: 1px solid var(--border);
     border-radius: 0.75rem;
@@ -148,27 +164,32 @@ body {
   }
 
   .input-field::placeholder {
-    color: var(--text-hint);
+    color: var(--text-muted);
   }
 
   .input-field:focus {
     border-color: var(--accent-1);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 3px oklch(0.62 0.24 320 / 0.15);
   }
 
-  /* Card */
+  /* Card — glassy with subtle gradient + hover lift */
   .card {
-    background: var(--bg-card);
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.2 0.03 320 / 70%) 0%,
+      oklch(0.17 0.02 285 / 80%) 100%
+    );
     border: 1px solid var(--border);
     border-radius: 1rem;
     transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .card:hover {
-    background: var(--bg-card-hover);
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: oklch(0.62 0.24 320 / 40%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 12px 40px -12px oklch(0.62 0.24 320 / 45%);
   }
 
   /* Badge */
@@ -198,7 +219,7 @@ body {
   }
 
   .badge-accent {
-    background: rgba(99, 102, 241, 0.15);
+    background: oklch(0.62 0.24 320 / 0.15);
     color: var(--accent-1);
   }
 
@@ -209,6 +230,7 @@ body {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    background: oklch(0.22 0.015 285 / 30%);
   }
 
   .upload-zone::before {
@@ -219,9 +241,10 @@ body {
     padding: 2px;
     background: linear-gradient(
       90deg,
-      var(--accent-1),
-      var(--accent-2),
-      var(--accent-1)
+      oklch(0.62 0.24 320),
+      oklch(0.7 0.2 350),
+      oklch(0.78 0.18 25),
+      oklch(0.62 0.24 320)
     );
     background-size: 200% 100%;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -241,20 +264,26 @@ body {
   .upload-zone:hover,
   .upload-zone.drag-over {
     border-color: transparent;
-    background: rgba(99, 102, 241, 0.05);
+    background: oklch(0.62 0.24 320 / 0.05);
   }
 
   /* Progress bar */
   .progress-bar {
     height: 6px;
-    background: var(--bg-card);
+    background: oklch(0.22 0.015 285);
     border-radius: 3px;
     overflow: hidden;
   }
 
   .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.55 0.26 295) 0%,
+      oklch(0.62 0.24 320) 35%,
+      oklch(0.66 0.22 350) 70%,
+      oklch(0.72 0.2 25) 100%
+    );
     border-radius: 3px;
     transition: width 0.5s ease;
   }
@@ -303,33 +332,73 @@ body {
     cursor: pointer;
     border: none;
   }
+}
 
-  /* Caption overlay */
-  .caption-container {
-    position: absolute;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    max-width: 85%;
-    pointer-events: none;
+/* ─── AUVI Z.ai utilities ─── */
+@layer utilities {
+  .auvi-gradient-text {
+    background-image: linear-gradient(
+      100deg,
+      oklch(0.72 0.24 320) 0%,
+      oklch(0.74 0.22 350) 45%,
+      oklch(0.78 0.18 30) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
-  .caption-word {
-    display: inline;
-    font-size: 1.5rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.9);
-    -webkit-text-stroke: 1.5px black;
-    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-    transition: all 0.1s ease;
+  /* 4-stop brand gradient (purple → magenta → orange) */
+  .auvi-gradient-brand {
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.55 0.26 295) 0%,
+      oklch(0.62 0.24 320) 35%,
+      oklch(0.66 0.22 350) 70%,
+      oklch(0.72 0.2 25) 100%
+    );
   }
 
-  .caption-word.active {
-    color: #00FFFF; /* Cyan for better contrast on dark backgrounds */
-    -webkit-text-stroke: 2px black;
-    transform: scale(1.15);
+  .auvi-gradient-card {
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.2 0.03 320 / 70%) 0%,
+      oklch(0.17 0.02 285 / 80%) 100%
+    );
+  }
+
+  .auvi-glow {
+    box-shadow:
+      0 0 0 1px oklch(0.62 0.24 320 / 25%),
+      0 18px 60px -20px oklch(0.62 0.24 320 / 55%);
+  }
+
+  .auvi-glow-soft {
+    box-shadow: 0 12px 40px -12px oklch(0.62 0.24 320 / 45%);
+  }
+
+  /* Faint dotted grid backdrop */
+  .auvi-grid-bg {
+    background-image:
+      linear-gradient(oklch(0.3 0.02 285 / 12%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.3 0.02 285 / 12%) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center center;
+  }
+
+  .auvi-shimmer {
+    background: linear-gradient(
+      110deg,
+      transparent 30%,
+      oklch(0.85 0.18 340 / 25%) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: auvi-shimmer 2.4s ease-in-out infinite;
+  }
+
+  .auvi-pulse-ring {
+    animation: auvi-pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
 
@@ -337,6 +406,17 @@ body {
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+@keyframes auvi-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes auvi-pulse-ring {
+  0% { box-shadow: 0 0 0 0 oklch(0.62 0.24 320 / 55%); }
+  70% { box-shadow: 0 0 0 14px oklch(0.62 0.24 320 / 0%); }
+  100% { box-shadow: 0 0 0 0 oklch(0.62 0.24 320 / 0%); }
 }
 
 .shimmer {

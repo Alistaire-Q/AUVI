@@ -1,9 +1,10 @@
-import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
 
 const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false }, ref) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const isSeeking = useRef(false);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -16,6 +17,7 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false },
     seekTo: (time) => {
       if (videoRef.current) {
         videoRef.current.currentTime = time;
+        setCurrentTime(time);
       }
     },
     getCurrentTime: () => videoRef.current?.currentTime || 0,
@@ -29,6 +31,8 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false },
     if (!video) return;
 
     const handleTimeUpdate = () => {
+      // Don't update state from video events while user is dragging the slider
+      if (isSeeking.current) return;
       setCurrentTime(video.currentTime);
       if (onTimeUpdate) onTimeUpdate(video.currentTime);
     };
@@ -36,17 +40,27 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false },
     const handleDurationChange = () => setDuration(video.duration);
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    
+    // When video finishes seeking to the new position, sync state
+    const handleSeeked = () => {
+      if (!isSeeking.current) {
+        setCurrentTime(video.currentTime);
+        if (onTimeUpdate) onTimeUpdate(video.currentTime);
+      }
+    };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('durationchange', handleDurationChange);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
+    video.addEventListener('seeked', handleSeeked);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
+      video.removeEventListener('seeked', handleSeeked);
     };
   }, [onTimeUpdate]);
 
@@ -82,13 +96,31 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false },
     }
   };
 
-  const handleSeek = (e) => {
+  // Called while user is actively dragging/interacting with the slider
+  const handleSeekInput = useCallback((e) => {
     const time = parseFloat(e.target.value);
     setCurrentTime(time);
+    // Update video position in real-time for visual feedback
     if (videoRef.current) {
       videoRef.current.currentTime = time;
     }
-  };
+  }, []);
+
+  // Mark the start of a seek interaction (mouse/touch down on slider)
+  const handleSeekStart = useCallback(() => {
+    isSeeking.current = true;
+  }, []);
+
+  // Mark the end of a seek interaction and commit the final position
+  const handleSeekEnd = useCallback((e) => {
+    const time = parseFloat(e.target.value);
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+    setCurrentTime(time);
+    if (onTimeUpdate) onTimeUpdate(time);
+    isSeeking.current = false;
+  }, [onTimeUpdate]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -136,7 +168,10 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false },
             min={0}
             max={duration || 100}
             value={currentTime}
-            onChange={handleSeek}
+            onMouseDown={handleSeekStart}
+            onTouchStart={handleSeekStart}
+            onInput={handleSeekInput}
+            onChange={handleSeekEnd}
             className="w-full"
             step="0.1"
           />

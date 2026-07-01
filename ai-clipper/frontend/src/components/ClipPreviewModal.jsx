@@ -55,12 +55,12 @@ export default function ClipPreviewModal() {
       ></div>
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-5xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
-        
+      <div className="relative w-full max-w-5xl auvi-gradient-card border border-border rounded-2xl auvi-glow overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card/60 backdrop-blur">
           <div>
-            <h2 className="text-lg font-bold text-text-primary line-clamp-1">{selectedClip.title}</h2>
+            <h2 className="text-lg font-semibold text-text-primary line-clamp-1">{selectedClip.title}</h2>
             <div className="flex items-center gap-3 mt-1">
               <span className="badge badge-accent">{selectedClip.category}</span>
               <span className="text-xs text-text-muted">
@@ -68,23 +68,23 @@ export default function ClipPreviewModal() {
               </span>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={closePreview}
-            className="p-2 rounded-full hover:bg-border text-text-muted hover:text-white transition-colors"
+            className="p-2 rounded-lg hover:bg-card text-text-muted hover:text-text-primary transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Main Body - Video Player */}
         <div className="relative w-full bg-black flex-grow flex items-center justify-center overflow-hidden min-h-[40vh] sm:min-h-[60vh]">
-          {/* We only have the clipped MP4 URL, not the original, so the video starts at 0s */}
-          {selectedClip.download_url ? (
+          {/* Use stream_url for playback (supports Range seeking), download_url as fallback */}
+          {(selectedClip.stream_url || selectedClip.download_url) ? (
             <>
               <VideoPlayer 
                 ref={playerRef}
-                src={selectedClip.download_url} 
+                src={selectedClip.stream_url || selectedClip.download_url} 
                 poster={selectedClip.thumbnail_url}
                 onTimeUpdate={handleTimeUpdate}
                 autoPlay={true}
@@ -99,33 +99,30 @@ export default function ClipPreviewModal() {
         </div>
         
         {/* Footer Controls */}
-        <div className="p-4 bg-card border-t border-border flex items-center justify-between">
+        <div className="p-4 bg-card/60 backdrop-blur border-t border-border flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex flex-col">
               <span className="text-sm text-text-muted mb-1">Viral Score</span>
               <div className="flex items-center gap-2">
                 <div className="w-32 h-2 bg-surface rounded-full overflow-hidden border border-border">
-                  <div 
-                    className={`h-full ${
-                      selectedClip.score >= 70 ? 'bg-success' : 
-                      selectedClip.score >= 40 ? 'bg-warning' : 'bg-danger'
-                    }`}
+                  <div
+                    className="h-full auvi-gradient-brand"
                     style={{ width: `${selectedClip.score}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-bold text-white">{selectedClip.score}%</span>
+                <span className="text-sm font-bold text-text-primary">{selectedClip.score}%</span>
               </div>
             </div>
-            
+
             <div className="h-8 w-px bg-border mx-2"></div>
-            
+
             <div className="flex flex-col">
               <span className="text-sm text-text-muted mb-1">Duration</span>
-              <span className="text-sm font-bold text-white">{selectedClip.duration.toFixed(1)}s</span>
+              <span className="text-sm font-bold text-text-primary">{selectedClip.duration.toFixed(1)}s</span>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={handleDownload}
             className="btn-primary"
           >

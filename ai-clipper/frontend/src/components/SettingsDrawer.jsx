@@ -34,18 +34,18 @@ export default function SettingsDrawer() {
       ></div>
 
       {/* Drawer */}
-      <div 
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-surface border-l border-border z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${translateX}`}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-md auvi-gradient-card border-l border-border z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${translateX}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <Settings2 className="w-6 h-6 text-accent-1" />
-            <h2 className="text-xl font-bold text-text-primary">Processing Settings</h2>
+            <h2 className="text-xl font-semibold text-text-primary">Processing Settings</h2>
           </div>
-          <button 
+          <button
             onClick={closeSettings}
-            className="p-2 rounded-full hover:bg-border text-text-muted hover:text-white transition-colors"
+            className="p-2 rounded-lg hover:bg-card text-text-muted hover:text-text-primary transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -185,17 +185,17 @@ export default function SettingsDrawer() {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-border bg-card flex items-center gap-4 mt-auto">
-          <button 
+        <div className="p-6 border-t border-border bg-card/60 backdrop-blur flex items-center gap-4 mt-auto">
+          <button
             onClick={() => {
               resetSettings();
               setLocalSettings(settings); // Reset local to default too
             }}
-            className="px-4 py-2 text-sm font-medium text-text-muted hover:text-white transition-colors"
+            className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
           >
             Reset
           </button>
-          <button 
+          <button
             onClick={handleSave}
             className="flex-1 btn-primary"
           >

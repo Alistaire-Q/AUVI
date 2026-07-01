@@ -129,6 +129,7 @@ class ClipResponse(BaseModel):
     words: list = []
     thumbnail_url: Optional[str] = None
     download_url: Optional[str] = None
+    stream_url: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -250,10 +250,11 @@ def generate_clip(
             movflags="faststart",
             threads=0,
         )
-        ffmpeg.run(stream, overwrite_output=True, quiet=True)
+        ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
 
     except ffmpeg.Error as e:
-        logger.error(f"Clip generation failed: {e}")
+        stderr = e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)
+        logger.error(f"Clip generation failed: {stderr}")
         # Fallback: try without subtitles
         if srt_path:
             logger.warning("Retrying without subtitles...")
@@ -268,11 +269,12 @@ def generate_clip(
                     crf=28,
                     threads=0,
                 )
-                ffmpeg.run(stream, overwrite_output=True, quiet=True)
+                ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
             except ffmpeg.Error as e2:
-                raise RuntimeError(f"Fallback clip generation failed: {str(e2)}")
+                stderr2 = e2.stderr.decode('utf-8', errors='replace') if e2.stderr else str(e2)
+                raise RuntimeError(f"Fallback clip generation failed: {stderr2}")
         else:
-            raise RuntimeError(f"Failed to generate clip: {str(e)}")
+            raise RuntimeError(f"Failed to generate clip: {stderr}")
 
     finally:
         # Cleanup temp SRT
@@ -314,10 +316,11 @@ def generate_thumbnail(
             vf=f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
         )
-        ffmpeg.run(stream, overwrite_output=True, quiet=True)
+        ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
     except ffmpeg.Error as e:
-        logger.error(f"Thumbnail generation failed: {e}")
-        raise RuntimeError(f"Failed to generate thumbnail: {str(e)}")
+        stderr = e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)
+        logger.error(f"Thumbnail generation failed: {stderr}")
+        raise RuntimeError(f"Failed to generate thumbnail: {stderr}")
 
     if not os.path.exists(output_path):
         raise RuntimeError(f"Thumbnail not found: {output_path}")

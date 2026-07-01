@@ -1,0 +1,21 @@
+{
+  "name": "auvi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AUVI - AI-powered video clip generator",
+  "scripts": {
+    "dev": "python ai-clipper/dev.py",
+    "dev:backend": "cd ai-clipper/backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev:frontend": "cd ai-clipper/frontend && npm run dev",
+    "install:all": "cd ai-clipper/backend && pip install -r requirements.txt && cd ../frontend && npm install",
+    "build:frontend": "cd ai-clipper/frontend && npm run build",
+    "start": "cd ai-clipper/backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.10"
+  },
+  "keywords": ["video", "ai", "clipping", "ffmpeg", "groq", "whisper"],
+  "author": "",
+  "license": "MIT"
+}

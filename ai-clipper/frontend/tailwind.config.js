@@ -7,19 +7,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        base: '#0A0A0F',
-        surface: '#12121A',
-        card: '#1A1A26',
-        'card-hover': '#1F1F30',
+        // Repointed to the AUVI Z.ai oklch palette (purple → magenta → orange).
+        // Token names are unchanged so existing markup inherits the new look.
+        base: 'oklch(0.13 0.012 285)',
+        surface: 'oklch(0.15 0.013 285)',
+        card: 'oklch(0.17 0.015 285)',
+        'card-hover': 'oklch(0.21 0.02 285)',
         accent: {
-          1: '#6366F1',
-          2: '#8B5CF6',
-          glow: '#4F46E5',
+          1: 'oklch(0.62 0.24 320)',   // primary purple
+          2: 'oklch(0.7 0.2 350)',     // magenta
+          glow: 'oklch(0.62 0.24 320)',
         },
-        'text-primary': '#F8FAFC',
-        'text-muted': '#94A3B8',
-        'text-hint': '#475569',
-        border: '#1E1E2E',
+        'text-primary': 'oklch(0.97 0.005 285)',
+        'text-muted': 'oklch(0.65 0.02 285)',
+        'text-hint': 'oklch(0.45 0.015 285)',
+        border: 'oklch(0.27 0.015 285 / 60%)',
         success: '#10B981',
         warning: '#F59E0B',
         danger: '#EF4444',
@@ -37,8 +39,8 @@ export default {
       },
       keyframes: {
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(99, 102, 241, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px oklch(0.62 0.24 320 / 0.3)' },
+          '50%': { boxShadow: '0 0 40px oklch(0.62 0.24 320 / 0.6)' },
         },
         'border-dance': {
           '0%': { backgroundPosition: '0% 50%' },

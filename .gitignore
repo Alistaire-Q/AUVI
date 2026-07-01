@@ -1,0 +1,38 @@
+# Environment variables (contains API keys!)
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+build/
+
+# Storage (video files, generated clips)
+storage/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

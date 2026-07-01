@@ -34,7 +34,7 @@ export default function YouTubeInput() {
 
     try {
       const result = await processUrl(url, settings);
-      
+
       // Fetch judul YouTube dari backend (sudah tersimpan saat get_video_info)
       let videoTitle = url;
       try {
@@ -65,28 +65,28 @@ export default function YouTubeInput() {
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="relative flex items-center w-full">
-        <div className="absolute left-4 text-text-muted">
+        <div className="pointer-events-none absolute left-4 text-text-muted">
           <Youtube className="w-5 h-5" />
         </div>
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="Paste YouTube URL here..."
-          className="input-field pl-12 pr-32 py-4 text-base shadow-lg text-white"
+          placeholder="Paste a YouTube video or Shorts link…"
+          className="input-field h-12 pl-12 pr-36 text-base shadow-none text-text-primary"
           disabled={isLoading}
         />
-        <div className="absolute right-2">
+        <div className="absolute right-1.5">
           <button
             type="submit"
             disabled={isLoading || !url.trim()}
-            className="btn-primary py-2 px-4 shadow-none"
+            className="btn-primary py-2 px-4 shadow-none gap-1.5"
           >
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                <span>Process</span>
+                <span>Get clips</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

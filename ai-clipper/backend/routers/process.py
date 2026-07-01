@@ -23,6 +23,7 @@ from services.transcriber import extract_audio, transcribe
 from services.analyzer import find_best_clips
 from services.semantic_validator import validate_and_fix_clips
 from services.clipper import generate_clip, generate_thumbnail, get_video_duration
+from sse_starlette.sse import EventSourceResponse
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +289,6 @@ async def get_progress(job_id: str, db: Session = Depends(get_db)):
         finally:
             poll_db.close()
 
-    from sse_starlette.sse import EventSourceResponse
     return EventSourceResponse(event_generator())
 
 
