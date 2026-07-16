@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, Play, Pause, ExternalLink } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 import VideoPlayer from './VideoPlayer';
-
 export default function ClipPreviewModal() {
   const { previewOpen, selectedClip, closePreview } = useClipStore();
   const [currentTime, setCurrentTime] = useState(0);
@@ -48,19 +47,19 @@ export default function ClipPreviewModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      {/* Dark Overlay backdrop-blur */}
+      {/* Light Overlay backdrop-blur */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-md animate-fade-in"
+        className="absolute inset-0 bg-white/80 backdrop-blur-sm animate-fade-in"
         onClick={closePreview}
       ></div>
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-5xl auvi-gradient-card border border-border rounded-2xl auvi-glow overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
+      <div className="relative w-full max-w-5xl bg-white border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-card/60 backdrop-blur">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-white">
           <div>
-            <h2 className="text-lg font-semibold text-text-primary line-clamp-1">{selectedClip.title}</h2>
+            <h2 className="text-lg font-semibold text-slate-900 line-clamp-1">{selectedClip.title}</h2>
             <div className="flex items-center gap-3 mt-1">
               <span className="badge badge-accent">{selectedClip.category}</span>
               <span className="text-xs text-text-muted">
@@ -71,46 +70,44 @@ export default function ClipPreviewModal() {
 
           <button
             onClick={closePreview}
-            className="p-2 rounded-lg hover:bg-card text-text-muted hover:text-text-primary transition-colors"
+            className="p-2 rounded-lg hover:bg-slate-100 text-text-muted hover:text-slate-900 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Main Body - Video Player */}
-        <div className="relative w-full bg-black flex-grow flex items-center justify-center overflow-hidden min-h-[40vh] sm:min-h-[60vh]">
+        <div className="relative w-full bg-slate-900 flex-grow flex items-center justify-center overflow-hidden min-h-[40vh] sm:min-h-[60vh]">
           {/* Use stream_url for playback (supports Range seeking), download_url as fallback */}
           {(selectedClip.stream_url || selectedClip.download_url) ? (
-            <>
-              <VideoPlayer 
+            <VideoPlayer 
                 ref={playerRef}
                 src={selectedClip.stream_url || selectedClip.download_url} 
                 poster={selectedClip.thumbnail_url}
                 onTimeUpdate={handleTimeUpdate}
                 autoPlay={true}
               />
-            </>
           ) : (
             <div className="text-center p-8">
-              <p className="text-text-muted mb-2">Video preview not available</p>
-              <p className="text-sm text-text-hint">Missing clip file path</p>
+              <p className="text-slate-300 mb-2">Video preview not available</p>
+              <p className="text-sm text-slate-500">Missing clip file path</p>
             </div>
           )}
         </div>
         
         {/* Footer Controls */}
-        <div className="p-4 bg-card/60 backdrop-blur border-t border-border flex items-center justify-between">
+        <div className="p-4 bg-slate-50 border-t border-border flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex flex-col">
               <span className="text-sm text-text-muted mb-1">Viral Score</span>
               <div className="flex items-center gap-2">
-                <div className="w-32 h-2 bg-surface rounded-full overflow-hidden border border-border">
+                <div className="w-32 h-2 bg-border rounded-full overflow-hidden border border-border">
                   <div
-                    className="h-full auvi-gradient-brand"
+                    className="h-full bg-accent-1"
                     style={{ width: `${selectedClip.score}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-bold text-text-primary">{selectedClip.score}%</span>
+                <span className="text-sm font-bold text-slate-900">{selectedClip.score}%</span>
               </div>
             </div>
 

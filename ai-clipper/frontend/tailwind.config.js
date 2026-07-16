@@ -7,24 +7,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Repointed to the AUVI Z.ai oklch palette (purple → magenta → orange).
-        // Token names are unchanged so existing markup inherits the new look.
-        base: 'oklch(0.13 0.012 285)',
-        surface: 'oklch(0.15 0.013 285)',
-        card: 'oklch(0.17 0.015 285)',
-        'card-hover': 'oklch(0.21 0.02 285)',
+        base: 'var(--bg-base)',
+        surface: 'var(--bg-surface)',
+        card: 'var(--bg-card)',
+        'card-hover': 'var(--bg-card-hover)',
         accent: {
-          1: 'oklch(0.62 0.24 320)',   // primary purple
-          2: 'oklch(0.7 0.2 350)',     // magenta
-          glow: 'oklch(0.62 0.24 320)',
+          1: 'var(--accent-1)',
+          2: 'var(--accent-2)',
+          glow: 'var(--accent-glow)',
         },
-        'text-primary': 'oklch(0.97 0.005 285)',
-        'text-muted': 'oklch(0.65 0.02 285)',
-        'text-hint': 'oklch(0.45 0.015 285)',
-        border: 'oklch(0.27 0.015 285 / 60%)',
-        success: '#10B981',
-        warning: '#F59E0B',
-        danger: '#EF4444',
+        'text-primary': 'var(--text-primary)',
+        'text-muted': 'var(--text-muted)',
+        'text-hint': 'var(--text-hint)',
+        border: 'var(--border)',
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        danger: 'var(--danger)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

@@ -7,9 +7,10 @@ import os
 import logging
 import shutil
 import uuid
+import asyncio
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from database import get_db, STORAGE_PATH
@@ -44,7 +45,6 @@ def _validate_upload(filename: str, file_size: int = 0):
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     settings_json: str = Form(default="{}"),
     db: Session = Depends(get_db),
@@ -126,9 +126,9 @@ async def upload_file(
 
     logger.info(f"Created upload job {job_id}: {file.filename} ({total_size / 1024 / 1024:.1f}MB)")
 
-    # Start processing pipeline (reuse from process router)
-    from routers.process import _process_video_pipeline
-    background_tasks.add_task(_process_video_pipeline, job_id)
+    # Start processing pipeline in thread pool agar tidak memblokir event loop
+    from routers.process import _run_pipeline_inline
+    asyncio.create_task(_run_pipeline_inline(job_id))
 
     return UploadResponse(
         job_id=job_id,

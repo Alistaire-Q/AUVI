@@ -10,11 +10,15 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 STORAGE_PATH = os.environ.get("STORAGE_PATH", os.path.join(os.path.dirname(__file__), "..", "storage"))
 os.makedirs(STORAGE_PATH, exist_ok=True)
 
-DATABASE_URL = f"sqlite:///{os.path.join(STORAGE_PATH, 'ai_clipper.db')}"
+# Default to SQLite if DATABASE_URL is not provided (for local testing without docker)
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(STORAGE_PATH, 'ai_clipper.db')}")
+
+# Connect args specific to SQLite (not needed for Postgres)
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
     echo=False,
 )
 

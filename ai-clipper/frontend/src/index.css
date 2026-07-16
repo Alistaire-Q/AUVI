@@ -2,21 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design System CSS Custom Properties ───
-   Repointed to the AUVI Z.ai oklch palette (purple → magenta → orange). */
+/* ─── Design System CSS Custom Properties (Light Theme) ─── */
 :root {
-  --bg-base: oklch(0.13 0.012 285);
-  --bg-surface: oklch(0.15 0.013 285);
-  --bg-card: oklch(0.17 0.015 285);
-  --bg-card-hover: oklch(0.21 0.02 285);
-  --accent-1: oklch(0.62 0.24 320);   /* primary purple */
-  --accent-2: oklch(0.7 0.2 350);     /* magenta */
-  --accent-3: oklch(0.78 0.18 25);    /* warm orange (for gradient tail) */
-  --accent-glow: oklch(0.62 0.24 320);
-  --text-primary: oklch(0.97 0.005 285);
-  --text-muted: oklch(0.65 0.02 285);
-  --text-hint: oklch(0.45 0.015 285);
-  --border: oklch(0.27 0.015 285 / 60%);
+  --bg-base: #F8F9FA;
+  --bg-surface: #F8F9FA;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F1F5F9;
+  --accent-1: #059669; /* emerald-600 */
+  --accent-2: #10B981; /* emerald-500 */
+  --accent-glow: #059669;
+  --text-primary: #0F172A; /* slate-900 */
+  --text-muted: #64748B; /* slate-500 */
+  --text-hint: #94A3B8; /* slate-400 */
+  --border: #E2E8F0; /* slate-200 */
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
@@ -57,55 +55,34 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.35 0.05 320 / 40%);
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.45 0.08 320 / 70%);
+  background: #94A3B8;
 }
 
 /* ─── Custom Utility Classes ─── */
 @layer components {
-  /* Gradient text — magenta → purple → orange */
-  .text-gradient {
-    background-image: linear-gradient(
-      100deg,
-      oklch(0.72 0.24 320) 0%,
-      oklch(0.74 0.22 350) 45%,
-      oklch(0.78 0.18 30) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: transparent;
-  }
-
   /* Glass morphism panel */
   .glass-panel {
-    background: rgba(23, 24, 32, 0.8);
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
   }
 
-  /* Glow button — 4-stop brand gradient */
+  /* Primary button — Solid dark slate */
   .btn-primary {
-    background-image: linear-gradient(
-      135deg,
-      oklch(0.55 0.26 295) 0%,
-      oklch(0.62 0.24 320) 35%,
-      oklch(0.66 0.22 350) 70%,
-      oklch(0.72 0.2 25) 100%
-    );
+    background: #0F172A;
     color: white;
     font-weight: 600;
     padding: 0.625rem 1.5rem;
     border-radius: 0.75rem;
     border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 20px oklch(0.62 0.24 320 / 0.25);
+    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -113,9 +90,8 @@ body {
   }
 
   .btn-primary:hover {
-    box-shadow: 0 0 30px oklch(0.62 0.24 320 / 0.5);
+    background: #1E293B;
     transform: translateY(-1px);
-    opacity: 0.92;
   }
 
   .btn-primary:active {
@@ -147,12 +123,12 @@ body {
 
   .btn-secondary:hover {
     background: var(--bg-card-hover);
-    border-color: var(--accent-1);
+    border-color: #CBD5E1;
   }
 
   /* Input field */
   .input-field {
-    background: oklch(0.22 0.015 285 / 60%);
+    background: #FFFFFF;
     color: var(--text-primary);
     border: 1px solid var(--border);
     border-radius: 0.75rem;
@@ -169,27 +145,21 @@ body {
 
   .input-field:focus {
     border-color: var(--accent-1);
-    box-shadow: 0 0 0 3px oklch(0.62 0.24 320 / 0.15);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
   }
 
-  /* Card — glassy with subtle gradient + hover lift */
+  /* Card — clean white with soft shadow */
   .card {
-    background-image: linear-gradient(
-      135deg,
-      oklch(0.2 0.03 320 / 70%) 0%,
-      oklch(0.17 0.02 285 / 80%) 100%
-    );
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 1rem;
     transition: all 0.3s ease;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
 
   .card:hover {
-    border-color: oklch(0.62 0.24 320 / 40%);
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px -12px oklch(0.62 0.24 320 / 45%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   /* Badge */
@@ -219,7 +189,7 @@ body {
   }
 
   .badge-accent {
-    background: oklch(0.62 0.24 320 / 0.15);
+    background: rgba(5, 150, 105, 0.15);
     color: var(--accent-1);
   }
 
@@ -230,60 +200,26 @@ body {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    background: oklch(0.22 0.015 285 / 30%);
-  }
-
-  .upload-zone::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 1.5rem;
-    padding: 2px;
-    background: linear-gradient(
-      90deg,
-      oklch(0.62 0.24 320),
-      oklch(0.7 0.2 350),
-      oklch(0.78 0.18 25),
-      oklch(0.62 0.24 320)
-    );
-    background-size: 200% 100%;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    animation: border-dance 3s linear infinite;
-  }
-
-  .upload-zone:hover::before,
-  .upload-zone.drag-over::before {
-    opacity: 1;
+    background: #F8FAFC;
   }
 
   .upload-zone:hover,
   .upload-zone.drag-over {
-    border-color: transparent;
-    background: oklch(0.62 0.24 320 / 0.05);
+    border-color: var(--accent-1);
+    background: #F0FDF4;
   }
 
   /* Progress bar */
   .progress-bar {
     height: 6px;
-    background: oklch(0.22 0.015 285);
+    background: var(--border);
     border-radius: 3px;
     overflow: hidden;
   }
 
   .progress-bar-fill {
     height: 100%;
-    background-image: linear-gradient(
-      135deg,
-      oklch(0.55 0.26 295) 0%,
-      oklch(0.62 0.24 320) 35%,
-      oklch(0.66 0.22 350) 70%,
-      oklch(0.72 0.2 25) 100%
-    );
+    background: var(--accent-1);
     border-radius: 3px;
     transition: width 0.5s ease;
   }
@@ -303,7 +239,7 @@ body {
     appearance: none;
     width: 100%;
     height: 4px;
-    background: var(--border);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 2px;
     outline: none;
     cursor: pointer;
@@ -323,78 +259,16 @@ body {
   input[type="range"]::-webkit-slider-thumb:hover {
     transform: scale(1.3);
   }
-
-  input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--accent-1);
-    cursor: pointer;
-    border: none;
-  }
 }
 
-/* ─── AUVI Z.ai utilities ─── */
+/* ─── Utilities ─── */
 @layer utilities {
   .auvi-gradient-text {
-    background-image: linear-gradient(
-      100deg,
-      oklch(0.72 0.24 320) 0%,
-      oklch(0.74 0.22 350) 45%,
-      oklch(0.78 0.18 30) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--accent-1);
   }
 
-  /* 4-stop brand gradient (purple → magenta → orange) */
   .auvi-gradient-brand {
-    background-image: linear-gradient(
-      135deg,
-      oklch(0.55 0.26 295) 0%,
-      oklch(0.62 0.24 320) 35%,
-      oklch(0.66 0.22 350) 70%,
-      oklch(0.72 0.2 25) 100%
-    );
-  }
-
-  .auvi-gradient-card {
-    background-image: linear-gradient(
-      135deg,
-      oklch(0.2 0.03 320 / 70%) 0%,
-      oklch(0.17 0.02 285 / 80%) 100%
-    );
-  }
-
-  .auvi-glow {
-    box-shadow:
-      0 0 0 1px oklch(0.62 0.24 320 / 25%),
-      0 18px 60px -20px oklch(0.62 0.24 320 / 55%);
-  }
-
-  .auvi-glow-soft {
-    box-shadow: 0 12px 40px -12px oklch(0.62 0.24 320 / 45%);
-  }
-
-  /* Faint dotted grid backdrop */
-  .auvi-grid-bg {
-    background-image:
-      linear-gradient(oklch(0.3 0.02 285 / 12%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.3 0.02 285 / 12%) 1px, transparent 1px);
-    background-size: 48px 48px;
-    background-position: center center;
-  }
-
-  .auvi-shimmer {
-    background: linear-gradient(
-      110deg,
-      transparent 30%,
-      oklch(0.85 0.18 340 / 25%) 50%,
-      transparent 70%
-    );
-    background-size: 200% 100%;
-    animation: auvi-shimmer 2.4s ease-in-out infinite;
+    background: var(--accent-1);
   }
 
   .auvi-pulse-ring {
@@ -408,15 +282,10 @@ body {
   100% { background-position: 200% 0; }
 }
 
-@keyframes auvi-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
 @keyframes auvi-pulse-ring {
-  0% { box-shadow: 0 0 0 0 oklch(0.62 0.24 320 / 55%); }
-  70% { box-shadow: 0 0 0 14px oklch(0.62 0.24 320 / 0%); }
-  100% { box-shadow: 0 0 0 0 oklch(0.62 0.24 320 / 0%); }
+  0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.5); }
+  70% { box-shadow: 0 0 0 14px rgba(5, 150, 105, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
 }
 
 .shimmer {

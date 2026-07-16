@@ -1,152 +1,211 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Link2, Upload, Sparkles, PlaySquare, Video, Gauge, Captions, Crop, Wand2, TrendingUp, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import UploadZone from '../components/UploadZone';
-import YouTubeInput from '../components/YouTubeInput';
+import { Settings, Link2, Upload, PlaySquare, Video, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import SettingsDrawer from '../components/SettingsDrawer';
-import Logo from '../components/Logo';
+import GenerateOptionsModal from '../components/GenerateOptionsModal';
 import useClipStore from '../store/useClipStore';
-
-const FEATURES = [
-  { icon: Gauge, title: 'Virality scoring', description: 'Every clip gets a 0–100 score so you know which moments will pop.' },
-  { icon: Captions, title: 'Animated captions', description: 'Word-by-word captions auto-styled for maximum retention.' },
-  { icon: Crop, title: 'Auto 9:16 reframing', description: 'Active-speaker tracking keeps the talent centered for vertical.' },
-  { icon: Wand2, title: 'AI hook extraction', description: 'AUVI finds the strongest moments so you never edit from scratch.' },
-];
-
-const STATS = [
-  { value: '100%', label: 'Local & private' },
-  { value: '4-step', label: 'AI pipeline' },
-  { value: 'Whisper', label: 'Grade transcription' },
-  { value: 'MP4', label: 'Ready-to-post clips' },
-];
+import { processUrl, uploadFile } from '../lib/api';
 
 export default function Home() {
-  const { toggleSettings, getRecentProjects } = useClipStore();
+  const { toggleSettings, getRecentProjects, addRecentProject, setUploadProgress } = useClipStore();
   const recentProjects = getRecentProjects();
-  const [mode, setMode] = useState('link');
+  const navigate = useNavigate();
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingVideo, setPendingVideo] = useState(null); // { type: 'link' | 'upload', data: string | File }
+  const [isLoading, setIsLoading] = useState(false);
+  const [modalUploadProgress, setModalUploadProgress] = useState(0);
+
+  const [urlInput, setUrlInput] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleVideoInput = (type, data) => {
+    setPendingVideo({ type, data });
+    setIsModalOpen(true);
+  };
+
+  const handleGenerate = async () => {
+    if (!pendingVideo) return;
+    setIsLoading(true);
+    setModalUploadProgress(0);
+
+    try {
+      if (pendingVideo.type === 'link') {
+        const url = pendingVideo.data;
+        const currentSettings = useClipStore.getState().settings;
+        const result = await processUrl(url, currentSettings);
+
+        let videoTitle = url;
+        try {
+          const { getJob } = await import('../lib/api');
+          const jobInfo = await getJob(result.job_id);
+          if (jobInfo.title && jobInfo.title !== 'Untitled') {
+            videoTitle = jobInfo.title;
+          }
+        } catch { }
+
+        addRecentProject({
+          id: result.job_id,
+          title: videoTitle,
+          source: 'youtube',
+          date: new Date().toISOString(),
+        });
+
+        navigate(`/processing/${result.job_id}`);
+      } else if (pendingVideo.type === 'upload') {
+        const file = pendingVideo.data;
+        const currentSettings = useClipStore.getState().settings;
+        const result = await uploadFile(file, currentSettings, (percent) => {
+          setModalUploadProgress(percent);
+          setUploadProgress(percent);
+        });
+
+        addRecentProject({
+          id: result.job_id,
+          title: file.name,
+          source: 'upload',
+          date: new Date().toISOString(),
+        });
+
+        navigate(`/processing/${result.job_id}`);
+      }
+    } catch (err) {
+      console.error("Failed to generate:", err);
+    } finally {
+      setIsLoading(false);
+      setIsModalOpen(false);
+      setPendingVideo(null);
+    }
+  };
+
+  const onContinueClick = () => {
+    if (urlInput.trim()) {
+      handleVideoInput('link', urlInput.trim());
+    }
+  };
+
+  const onFileChange = (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleVideoInput('upload', files[0]);
+    }
+    e.target.value = '';
+  };
 
   return (
-    <div className="min-h-screen bg-base relative overflow-hidden flex flex-col">
-      {/* Ambient backdrop */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-accent-1/20 blur-[140px]" />
-        <div className="absolute top-40 -right-32 h-[320px] w-[420px] rounded-full bg-accent-2/15 blur-[120px]" />
-        <div className="absolute top-20 -left-32 h-[280px] w-[380px] rounded-full bg-orange-500/10 blur-[120px]" />
-        <div className="absolute inset-0 auvi-grid-bg opacity-30 [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
-      </div>
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-900 font-sans flex flex-col items-center">
+      <header className="w-full max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-[#1a1f2e] rounded-[8px] flex items-center justify-center text-white font-bold text-lg">
+            A
+          </div>
+          <span className="font-bold text-lg tracking-wide text-[#1a1f2e]">AUVI</span>
+        </div>
+        
+        <nav className="hidden md:flex items-center gap-10 text-[15px] font-medium text-slate-500">
+          <a href="#" className="hover:text-slate-900 transition-colors">Workspace</a>
+          <a href="#" className="hover:text-slate-900 transition-colors">How it works</a>
+        </nav>
 
-      {/* Header */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 py-5 flex justify-between items-center">
-        <Logo size={36} />
-        <button
-          onClick={toggleSettings}
-          className="p-2 rounded-lg hover:bg-surface border border-transparent hover:border-border text-text-muted hover:text-text-primary transition-all flex items-center gap-2"
-        >
-          <Settings className="w-5 h-5" />
-          <span className="text-sm font-medium hidden sm:inline-block">Settings</span>
-        </button>
+        <div className="flex items-center gap-6">
+          <Link to="/projects" className="text-[15px] font-medium text-slate-500 hover:text-slate-900 transition-colors hidden sm:block">
+            My projects
+          </Link>
+          <button
+            onClick={toggleSettings}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[15px] font-medium hover:bg-slate-50 transition-colors text-slate-700 bg-white shadow-sm"
+          >
+            <Settings className="w-[18px] h-[18px]" />
+            Settings
+          </button>
+        </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 flex-grow flex flex-col items-center w-full max-w-6xl mx-auto px-4 md:px-6 pt-6 pb-16 md:pt-10">
-        {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-text-muted backdrop-blur">
-            <span className="size-1.5 rounded-full bg-accent-1 auvi-pulse-ring" />
-            100% Free & Local Processing
+      <main className="flex-grow flex flex-col items-center w-full max-w-4xl mx-auto px-4 pt-20 pb-16">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[10px] font-bold text-slate-500 tracking-[0.15em] mb-10 shadow-sm uppercase">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
+          LOCAL · PRIVATE · READY-TO-POST
+        </div>
+
+        <h1 className="text-center text-[52px] md:text-[68px] font-serif text-[#1a1f2e] leading-[1.1] mb-6 max-w-[800px] tracking-tight">
+          Turn long videos into<br/>
+          <span className="bg-[#e8f5e9] px-2 py-1 mx-1 text-[#1a1f2e]">short clips</span> ready to ship
+        </h1>
+
+        <p className="text-center text-slate-500 text-[17px] md:text-[19px] max-w-2xl mb-12 font-normal leading-relaxed">
+          Paste a YouTube link or upload a file. AUVI finds the strongest moments, scores virality, and exports vertical clips with captions.
+        </p>
+
+        {/* Input Bar */}
+        <div className="w-full max-w-[800px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-2.5 flex items-center border border-slate-100 mb-16">
+          <div className="pl-4 pr-3 text-slate-400">
+            <Link2 className="w-[22px] h-[22px]" />
           </div>
+          <input 
+            type="text" 
+            placeholder="Paste video link here..." 
+            className="flex-grow bg-transparent border-none outline-none text-slate-700 placeholder-slate-400 text-[17px] py-3.5"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onContinueClick();
+            }}
+          />
+          <div className="flex items-center gap-2 pr-1">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".mp4,.mov,.avi,.webm"
+              onChange={onFileChange}
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 text-[15px] font-semibold hover:bg-slate-50 transition-colors whitespace-nowrap text-slate-700"
+            >
+              <Upload className="w-[18px] h-[18px]" />
+              Upload File
+            </button>
+            <button 
+              onClick={onContinueClick}
+              className="px-8 py-3 rounded-xl bg-[#0a1128] text-white text-[15px] font-semibold hover:bg-slate-800 transition-colors whitespace-nowrap"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
 
-          <h1 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl leading-tight">
-            Turn long videos into
-            <br className="hidden sm:block" />{' '}
-            <span className="auvi-gradient-text">viral short clips</span> with one click.
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-sm text-text-muted md:text-base">
-            Upload a video or paste a YouTube link. AUVI analyzes the content,
-            finds the most engaging moments, and ships vertical clips with captions — ready to post.
-          </p>
-        </motion.div>
-
-        {/* Uploader card */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mx-auto mt-8 w-full max-w-3xl"
-        >
-          <div className="auvi-glow rounded-2xl border border-border bg-card/80 p-5 backdrop-blur-xl md:p-6">
-            {/* Mode switch */}
-            <div className="mb-5 inline-flex rounded-xl border border-border bg-surface/60 p-1">
-              <button
-                onClick={() => setMode('link')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
-                  mode === 'link'
-                    ? 'auvi-gradient-brand text-white shadow-sm'
-                    : 'text-text-muted hover:text-text-primary'
-                }`}
-              >
-                <Link2 className="w-4 h-4" />
-                Paste link
-              </button>
-              <button
-                onClick={() => setMode('upload')}
-                className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
-                  mode === 'upload'
-                    ? 'auvi-gradient-brand text-white shadow-sm'
-                    : 'text-text-muted hover:text-text-primary'
-                }`}
-              >
-                <Upload className="w-4 h-4" />
-                Upload file
-              </button>
+        {/* Clip workspace placeholder */}
+        <div className="w-full max-w-[850px] bg-white rounded-[32px] shadow-[0_8px_40px_rgb(0,0,0,0.03)] border border-slate-100 p-8 text-left relative overflow-hidden">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h2 className="text-[22px] font-semibold text-[#1a1f2e] mb-1.5 tracking-tight">Clip workspace</h2>
+              <p className="text-slate-500 text-[15px]">Tune output before AUVI runs the pipeline.</p>
             </div>
-
-            {mode === 'link' ? (
-              <div className="space-y-3">
-                <YouTubeInput />
-                <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                  {['YouTube', 'Shorts', 'youtu.be'].map((f) => (
-                    <span key={f} className="rounded-md bg-surface px-2 py-1">{f}</span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <UploadZone />
-            )}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-200 text-[13px] font-medium text-slate-500 bg-white">
+              <div className="w-2 h-2 rounded-full bg-slate-200"></div>
+              No source yet
+            </div>
           </div>
-
-          {/* Trending-style chips (format support) */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="flex items-center gap-1.5 text-text-muted">
-              <TrendingUp className="w-3.5 h-3.5" />
-              Supports:
-            </span>
-            {['MP4', 'MOV', 'AVI', 'WebM', 'YouTube URL'].map((format) => (
-              <span key={format} className="rounded-full border border-border bg-card/60 px-3 py-1 text-text-muted">
-                {format}
-              </span>
-            ))}
+          
+          <div className="mt-8 bg-slate-50/50 rounded-2xl h-48 border border-slate-100 flex items-center justify-center">
+             <div className="text-center text-slate-400">
+               <p className="text-[15px] font-medium">Waiting for video input...</p>
+             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Recent Projects (if any) */}
         {recentProjects.length > 0 && (
-          <section className="mt-14 w-full">
-            <div className="mb-5 flex items-end justify-between">
+          <section className="mt-20 w-full max-w-[850px]">
+            <div className="mb-6 flex items-end justify-between">
               <div>
-                <h2 className="text-lg font-semibold tracking-tight md:text-xl flex items-center gap-2">
-                  <PlaySquare className="w-5 h-5 text-accent-1" />
+                <h2 className="text-[20px] font-semibold tracking-tight text-[#1a1f2e] flex items-center gap-2">
+                  <PlaySquare className="w-5 h-5 text-emerald-600" />
                   Recent projects
                 </h2>
-                <p className="mt-1 text-sm text-text-muted">Jump back into a video you processed.</p>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -159,21 +218,21 @@ export default function Home() {
                 >
                   <Link
                     to={`/dashboard/${project.id}`}
-                    className="group block h-full p-4 text-left transition-all hover:border-accent-1/40"
+                    className="group block h-full p-4 text-left transition-all hover:border-slate-300 rounded-2xl border border-slate-200 bg-white hover:shadow-md"
                   >
-                    <div className="card flex items-start gap-3">
-                      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-1/15 text-accent-1">
+                    <div className="flex items-start gap-3">
+                      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600">
                         {project.source === 'youtube' ? <Video className="w-4 h-4" /> : <PlaySquare className="w-4 h-4" />}
                       </div>
                       <div className="min-w-0 flex-1 overflow-hidden">
-                        <p className="text-sm font-medium text-text-primary truncate" title={project.title}>
+                        <p className="text-sm font-medium text-slate-900 truncate" title={project.title}>
                           {project.title}
                         </p>
-                        <p className="mt-1 text-xs text-text-muted">
+                        <p className="mt-1 text-xs text-slate-500">
                           {new Date(project.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+                      <ArrowRight className="w-4 h-4 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
                   </Link>
                 </motion.div>
@@ -181,68 +240,18 @@ export default function Home() {
             </div>
           </section>
         )}
-
-        {/* Feature strip */}
-        <section className="mt-16 w-full">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 + i * 0.05 }}
-                className="rounded-2xl border border-border bg-card/60 p-5 backdrop-blur"
-              >
-                <div className="grid size-10 place-items-center rounded-xl bg-accent-1/15 text-accent-1">
-                  <f.icon className="w-5 h-5" />
-                </div>
-                <h3 className="mt-3 text-sm font-semibold">{f.title}</h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-text-muted">{f.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* Stats band */}
-        <section className="mt-8 w-full">
-          <div className="grid gap-4 rounded-2xl border border-border bg-card/60 p-6 backdrop-blur md:grid-cols-4 md:p-8">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="text-center md:text-left">
-                <div className="text-2xl font-semibold tracking-tight md:text-3xl">
-                  <span className="auvi-gradient-text">{stat.value}</span>
-                </div>
-                <p className="mt-1 text-xs text-text-muted">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="mt-16 text-center">
-          <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-            Your next viral clip is hiding
-            <br className="hidden sm:block" /> in a video you already have.
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">
-            Drop a link above and AUVI will surface it in minutes — captions included.
-          </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-text-muted">
-              <CheckCircle2 className="w-3.5 h-3.5 text-accent-1" />
-              No credit card required
-            </div>
-          </div>
-        </section>
-
-        <footer className="mt-20 w-full border-t border-border pt-6 text-center text-xs text-text-muted">
-          <p className="flex items-center justify-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-accent-1" />
-            © {new Date().getFullYear()} AUVI · Built for creators who ship daily.
-          </p>
-        </footer>
       </main>
 
       <SettingsDrawer />
+
+      <GenerateOptionsModal
+        isOpen={isModalOpen}
+        onClose={() => !isLoading && setIsModalOpen(false)}
+        onGenerate={handleGenerate}
+        isLoading={isLoading}
+        pendingType={pendingVideo?.type}
+        uploadProgress={modalUploadProgress}
+      />
     </div>
   );
 }

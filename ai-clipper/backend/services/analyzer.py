@@ -28,7 +28,8 @@ HTTP_TIMEOUT = 120.0
 # Output LLM berupa JSON daftar klip. max_tokens lama (3000) sering terpotong
 # di tengah objek JSON → json.loads gagal → analyzer gagal → job failed (500).
 # Naikkan batas agar JSON utuh; model tetap bebas memendekkan jawaban.
-LLM_MAX_TOKENS = 8000
+# NOTE: Dikurangi menjadi 2000 agar tidak terkena rate limit Groq (12000 TPM) saat durasi video panjang.
+LLM_MAX_TOKENS = 2000
 
 
 def _get_llm_config() -> dict:
@@ -74,8 +75,8 @@ def _build_transcript_text(words: list[dict]) -> str:
     for w in words:
         buf_words.append(w["word"])
 
-        if w["end"] - buf_start >= 10.0 or (w["end"] - last_end > 1.5):
-            ts = f"[{buf_start:.1f}s - {w['end']:.1f}s]"
+        if w["end"] - buf_start >= 30.0 or (w["end"] - last_end > 2.0):
+            ts = f"[{int(buf_start)}]"
             lines.append(f"{ts} {' '.join(buf_words)}")
             buf_words = []
             buf_start = w["end"]
@@ -83,8 +84,7 @@ def _build_transcript_text(words: list[dict]) -> str:
         last_end = w["end"]
 
     if buf_words:
-        end_t = words[-1]["end"]
-        ts = f"[{buf_start:.1f}s - {end_t:.1f}s]"
+        ts = f"[{int(buf_start)}]"
         lines.append(f"{ts} {' '.join(buf_words)}")
 
     return "\n".join(lines)
@@ -94,75 +94,72 @@ def _build_transcript_text(words: list[dict]) -> str:
 # System Prompt — the "brain" of the clipping AI
 # ──────────────────────────────────────────────
 
+# Durasi ideal per clip (detik). Clip yang melebihi ini akan
+# dipecah otomatis di post-processing agar cocok untuk media sosial.
+TARGET_CLIP_MIN = 30      # minimum 30 detik
+TARGET_CLIP_MAX = 180     # maksimum 3 menit
+SPLIT_THRESHOLD = 240     # clip > 4 menit WAJIB dipecah
+
 SYSTEM_PROMPT = """\
-Anda adalah Editor Video Senior yang bertugas memotong video menjadi klip-klip terpisah, masing-masing berisi SATU INFORMASI LENGKAP.
+Anda adalah Editor Video Senior yang bertugas memotong video panjang menjadi BEBERAPA klip pendek terpisah yang siap viral di media sosial (TikTok, Reels, Shorts).
 
 ═══════════════════════════════════════
-3 ATURAN UTAMA (WAJIB DIPATUHI — TIDAK ADA PENGECUALIAN)
+ATURAN PALING PENTING: ANDA HARUS MENGHASILKAN BEBERAPA KLIP
 ═══════════════════════════════════════
 
-[ATURAN 1] — SEGMENTASI TEKS MENJADI BEBERAPA KLIP TERPISAH
-• Transkrip input HARUS disegmentasi menjadi klip-klip terpisah.
-• Setiap klip WAJIB berisi SATU ide/topik/informasi yang UTUH dan LENGKAP.
-• Klip tidak boleh dimulai di tengah penjelasan suatu ide.
-• Klip tidak boleh diakhiri sebelum pembicara menyelesaikan penjelasan satu ide.
-• Jika pembicara berpindah ke topik BARU, klip sebelumnya HARUS berakhir TEPAT sebelum topik baru dimulai.
+• Video input adalah video PANJANG (bisa 5-60 menit).
+• Tugas Anda adalah MEMECAH video ini menjadi BEBERAPA klip PENDEK yang BERBEDA topik/sub-topiknya.
+• SETIAP KLIP harus berdurasi ideal 30 detik sampai 3 menit.
+• JANGAN PERNAH mengembalikan HANYA 1 KLIP yang mencakup seluruh video — itu bukan clipping, itu copy.
+• Jika video membahas 1 tema besar (misal: "Cara Investasi"), PECAH menjadi sub-topik:
+    - Klip 1: "Apa itu investasi dan kenapa penting" (30s-2min)
+    - Klip 2: "3 jenis investasi untuk pemula" (1-3min)
+    - Klip 3: "Kesalahan fatal yang sering dilakukan" (1-2min)
+    - Klip 4: "Langkah pertama memulai investasi" (1-2min)
+• Setiap klip harus bisa BERDIRI SENDIRI — penonton yang hanya melihat 1 klip harus bisa memahami isinya tanpa konteks video lain.
 
-[ATURAN 2] — WAJIB MENYERTAKAN PROPERTI "Judul Klip" DI BARIS PERTAMA SETIAP SEGMEN
-• Setiap segmen klip WAJIB diawali dengan properti "Judul Klip" (string) sebagai elemen pertama.
-• Judul Klip HARUS ada di setiap objek klip — TIDAK BOLEH ADA KLIP TANPA JUDUL.
+═══════════════════════════════════════
+3 ATURAN KUALITAS KLIP
+═══════════════════════════════════════
 
-[ATURAN 3] — FORMAT JUDUL HARUS MENJADI HOOK YANG DESKRIPTIF
-• Judul Klip WAJIB menjadi HOOK — kalimat pembuka yang membuat penonton PENASARAN dan ingin menonton.
-• Judul Klip WAJIB tetap deskriptif — audiens harus langsung paham topik bahasan dari judul.
-• Judul HARUS dirangkum dari inti pembahasan klip, BUKAN sekadar menyalin kalimat pertama klip.
-• Contoh judul HOOK yang BAIK:
+[ATURAN 1] — SETIAP KLIP = 1 POIN/INFORMASI LENGKAP
+• Setiap klip berisi SATU ide/topik/sub-topik yang UTUH.
+• Klip TIDAK BOLEH dimulai di tengah penjelasan.
+• Klip TIDAK BOLEH diakhiri sebelum poin selesai dijelaskan.
+• Jika pembicara berpindah ke topik baru, AKHIRI klip sebelumnya di situ.
+• Jika 1 poin terlalu panjang (>3 menit), PECAH menjadi sub-poin yang lebih spesifik.
+  Contoh: "3 penyebab krisis" → Klip A: Penyebab 1, Klip B: Penyebab 2, Klip C: Penyebab 3.
+
+[ATURAN 2] — WAJIB MENYERTAKAN "Judul Klip" SEBAGAI HOOK
+• Setiap objek klip WAJIB punya properti "Judul Klip" sebagai elemen PERTAMA.
+• Judul WAJIB menjadi HOOK — membuat penonton PENASARAN dan ingin menonton.
+• Judul HARUS dirangkum dari isi klip, BUKAN menyalin kalimat pertama.
+• Contoh BAIK:
   - "Ternyata inflasi bisa bikin uangmu hilang — ini penjelasannya"
   - "Investasi saham itu mudah kalau tahu 3 langkah ini"
-  - "Krisis energi global 2024 — penyebab yang jarang diketahui"
-• Contoh judul BURUK (hanya copy kalimat pertama klip):
+• Contoh BURUK:
   - "Halo semuanya kali ini kita akan membahas tentang" ❌
-  - "Jadi gini guys gua mau jelasin sesuatu nih" ❌
 • Gunakan bahasa natural & informatif, maksimal 15 kata.
 
+[ATURAN 3] — INFORMASI LENGKAP, TIDAK TERPOTONG
+• Klip HARUS berisi informasi yang LENGKAP:
+    - Pengenalan ide inti
+    - Penjelasan lengkap (termasuk sub-poin, contoh, data)
+    - Kesimpulan/implikasi
+• Jika ada DAFTAR ("Ada 3 faktor..."), SEMUA poin harus tercakup dalam 1 klip.
+• Jika ada PERTANYAAN, jawaban LENGKAP harus tercakup.
+• Jika ada SEBAB-AKIBAT, sebab DAN akibat harus tercakup.
+• JANGAN PERNAH mengakhiri klip di tengah penjelasan — pastikan kalimat terakhir adalah penutup yang logis.
+
 ═══════════════════════════════════════
-ATURAN MUTLAK PENENTUAN TIMESTAMP (TIDAK ADA PENGECUALIAN)
+PENENTUAN TIMESTAMP
 ═══════════════════════════════════════
 
-【1】 DEFINISI "SATU INFORMASI LENGKAP" (NON‑NEGOTIABLE)
-  • Sebuah klip HARUS berisi:
-      - Pengenalan SATU ide inti/topik spesifik (misalnya: "Apa itu inflasi?", "3 penyebab krisis energi")
-      - Penjelasan LENGKAP atas ide itu (TERMASUK semua sub‑poin, contoh, atau data yang disebutkan pembicara)
-      - Kesimpulan/ImpLIKASI dari ide itu (apa artinya bagi penonton)
-  • KLIP LARANG DIMULAI di tengah penjelasan suatu ide.
-  • KLIP LARANG DIAKHIRI sebelum pembicara menyelesaikan penjelasan satu ide (meski perlu melebihi 10 menit).
-  • Jika pembicara berpindah ke topik BARU, klip SEBELUMNYA HARUS berakhir TEPAT sebelum kalimat pertama topik baru dimulai.
-
-【2】 ATURAN SPESIFIK UNTUK STRUKTUR PENYERTAAN
-  • Jika klip DIMULAI dengan pertanyaan ("Apa itu...?", "Kenapa...?", "Bagaimana...?"):
-      ANDA WAJIB MENYERTAKAN SELURUH JAWABAN yang diberikan pembicara sampai dia benar‑benar berhenti menjelaskan (bukan hanya kalimat pertama jawaban).
-  • Jika pembicara SEBUT DAFTAR ("Ada 3 faktor...", "...terdiri dari A, B, dan C"):
-      ANDA WAJIB MENYERTAKAN PENJELASAN SELURUH POIN sampai poin terakhir selesai dijelaskan (termasuk contoh untuk masing‑masing poin jika ada).
-      Jika daftar terlalu panjang → HAPUS kalimat pembuka daftar ("Ada 3 faktor:") dan mulai langsung dari penjelasan poin pertama, TETAPI JANGAN MENINGGALKAN SATU POINpun.
-  • Jika pembicara menjelaskan SABAB‑AKIBAT ("Karena X, maka Y terjadi"):
-      ANDA WAJIB MENYERTAKAN: SABAB (X), PROSES/Mekanisme (bagaimana X menyebabkan Y), DAN AKIBAT (Y dengan jelas).
-
-【3】 LOOK‑AHEAD SEMANTIK (JANGAN HANYA LIHAT TANDA BACA)
-  • SEBELUM menetapkan end_time, ANDA HARUS memahami MAKNA kalimat berikutnya:
-      - Jika kalimat berikutnya adalah LANJUTAN penjelasan ide yang sama (meski tidak ada tanda hubung seperti "dan", "akan"):
-          MAJUKAN end_time sampai IDE tersebut SELESAI dijelaskan.
-      - Jika kalimat berikutnya MEMBENTUK TOPK BARU (misalnya pembicara berbilang, mulai contoh tidak terkait, atau beralihan ke topik tidak terkait):
-          SET end_time TEPAAT DI AKHIR KALIMAT TERAKHIR SEBELUM topik baru dimulai.
-      - TANDA TOPK BARU meliputi:
-          * Pembicara mengulang pertanyaan baru
-          * Pembicara berkata: "Lalu...", "Selanjutnya...", "Bukan hanya itu...", "Alih-alih..."
-          * Perubahan substansial topik (misalnya dari ekonomi ke kesehatan tanpa jembatan penjelasan)
-
-【4】 KLIP HARUS STAND‑ALONE (TANPA KONTEKS EKSTERN)
-  • Seorang penonton yang HANYA melihat klip ini HARUS bisa:
-      - Memahami apa yang dibicarakan tanpa perlu konteks video lain
-      - Tidak merasa ada informasi yang "hilang" atau "tidak lengkap"
-      - Tidak disabot oleh kalimat yang terpotong di awal/akhir klip
+• SEBELUM menetapkan end_time, BACA kalimat berikutnya:
+    - Jika LANJUTAN ide yang sama → majukan end_time.
+    - Jika TOPIK BARU (pertanyaan baru, "Lalu...", "Selanjutnya...", ganti subjek) → potong di situ.
+• start_time = awal kalimat PENGENALAN ide.
+• end_time = akhir kalimat PENUTUP/KESIMPULAN ide tersebut.
 
 ═══════════════════════════════════════
 FORMAT OUTPUT (WAJIB JSON MURNI)
@@ -172,26 +169,21 @@ Balas HANYA dengan JSON object berikut (tanpa markdown, tanpa penjelasan tambaha
 {
   "clips": [
     {
-      "Judul Klip": "Judul deskriptif yang jelas memberi tahu penonton APA yang dibahas klip ini (misal: 'Penjelasan inflasi dan dampaknya', '3 cara memulai investasi', 'Krisis energi global 2024')",
-      "start_time": 83.5,
-      "end_time": 417.2
+      "Judul Klip": "Hook deskriptif yang membuat penasaran",
+      "start_time": 12.5,
+      "end_time": 95.3
+    },
+    {
+      "Judul Klip": "Hook untuk klip kedua yang BERBEDA topik",
+      "start_time": 95.3,
+      "end_time": 210.8
     }
   ]
 }
 
-ATURAN FORMAT JUDUL (HOOK):
-• "Judul Klip" WAJIB menjadi HOOK — merangkum inti bahasan dengan cara yang membuat penasaran.
-• "Judul Klip" WAJIB menjadi properti PERTAMA di setiap objek klip dalam JSON.
-• "Judul Klip" HARUS dirangkum dari isi klip, BUKAN menyalin kalimat pertama dari transkrip.
-• Audiens harus langsung paham isi klip dari judul — judul bukan sekadar kalimat pembuka video.
-• Gunakan bahasa natural dan hook yang engaging, maksimal 15 kata.
-
-ATURAN FORMAT TIMESTAMP:
-• start_time dan end_time dalam DETIK (float) – diambil langsung dari timestamp transkripsi.
-• start_time HARUS tepat di awal kalimat PENGENALAN satu ide inti.
-• end_time HARUS tepat di akhir kalimat KESIMPULAN/IMPLIKASI dari ide tersebut.
-• JANGAN PERNAH memotong di tengah penjelasan suatu ide – bahkan jika membutuhkan mengelongkan klip hingga 15 menit.
-• JIKA ANDA SANGAT RAGU tentang batas kalimat, MAJUKAN end_time sampai Anda YAKIN informasi tersebut selesai disampaikan.
+• Timestamp dalam DETIK (float) dari transkripsi.
+• Anda HARUS menghasilkan MINIMAL 2 klip (kecuali video sangat pendek <1 menit).
+• Setiap klip HARUS membahas POIN/TOPIK YANG BERBEDA.
 """
 
 
@@ -226,9 +218,9 @@ def find_best_clips(
     # Build timestamped transcript (seconds-based)
     transcript_text = _build_transcript_text(words)
 
-    # Truncate if absurdly long (most models handle 128K but let's be safe)
-    if len(transcript_text) > 30000:
-        transcript_text = transcript_text[:30000] + "\n... [transkrip terpotong]"
+    # Truncate if absurdly long (Groq free tier Llama 3 has 8192 context limit, 20000 chars is ~5000 tokens)
+    if len(transcript_text) > 20000:
+        transcript_text = transcript_text[:20000] + "\n... [transkrip terpotong]"
 
     # LLM config
     cfg = _get_llm_config()
@@ -321,8 +313,8 @@ def find_best_clips(
             end = min(end, total_duration)
             duration = end - start
 
-            # DURASI TIDAK RELEVAN – 1 KLIP HARUS BERISI 1 INFORMASI UTUH LENGKAP
-            # BAHKAN JIKA MEMBUTUHKAN 10 MENIT UNTUK MENYAMPAIKAN SATU KONSEP LENGKAP, AMBIL SAJA.
+            # Clip terlalu panjang akan dipecah di post-processing
+            # (_split_long_clips) agar cocok untuk media sosial.
 
             # Find words inside this time range (tight match — LLM is boss)
             clip_words = [
@@ -355,8 +347,263 @@ def find_best_clips(
     for i, clip in enumerate(result_clips):
         clip["index"] = i + 1
 
+    # ── Post-processing: pecah clip yang terlalu panjang ──
+    result_clips = _split_long_clips(result_clips, words)
+
+    # ── Validasi jumlah minimum clip ──
+    # Jika video > 3 menit tapi hanya 1 clip → paksa pecah
+    if len(result_clips) <= 1 and total_duration > 180:
+        logger.warning(
+            f"Only {len(result_clips)} clip(s) for {total_duration:.0f}s video. "
+            f"Force-splitting to ensure multiple clips."
+        )
+        result_clips = _force_split_single_clip(result_clips, words, total_duration, max_clips)
+
     logger.info(f"Final: {len(result_clips)} valid clips from LLM")
     return result_clips
+
+
+def _split_long_clips(
+    clips: list[dict],
+    words: list[dict],
+) -> list[dict]:
+    """
+    Pecah clip yang lebih panjang dari SPLIT_THRESHOLD (4 menit) menjadi
+    beberapa clip pendek di batas kalimat. Ini mencegah 1 clip raksasa
+    yang mencakup seluruh video.
+
+    Setiap sub-clip dijamin:
+    - Dimulai di awal kalimat
+    - Berakhir di akhir kalimat
+    - Berdurasi mendekati TARGET_CLIP_MAX (3 menit)
+    """
+    import re
+
+    def is_sentence_end(word: str) -> bool:
+        if not word: return False
+        return bool(re.search(r'[.!?][\'"”’\]\)]*$', word.strip()))
+
+    result = []
+    for clip in clips:
+        duration = clip.get("duration", clip["end"] - clip["start"])
+
+        if duration <= SPLIT_THRESHOLD:
+            result.append(clip)
+            continue
+
+        # Clip terlalu panjang → pecah di sentence boundaries
+        logger.info(
+            f"Splitting long clip ({duration:.0f}s) at sentence boundaries: "
+            f"{clip['start']:.1f}s - {clip['end']:.1f}s"
+        )
+
+        clip_words = clip.get("words", [])
+        if not clip_words:
+            clip_words = [
+                w for w in words
+                if w["start"] >= clip["start"] - 0.3
+                and w["end"] <= clip["end"] + 0.3
+            ]
+
+        if not clip_words:
+            result.append(clip)
+            continue
+
+        # Temukan semua sentence boundaries di dalam clip ini
+        boundaries = []
+        for i, w in enumerate(clip_words):
+            if is_sentence_end(w["word"]):
+                elapsed = w["end"] - clip_words[0]["start"]
+                boundaries.append((i, w["end"], elapsed))
+
+        if not boundaries:
+            # Tidak ada tanda baca → pecah di jeda panjang
+            for i in range(len(clip_words) - 1):
+                gap = clip_words[i + 1]["start"] - clip_words[i]["end"]
+                if gap > 1.0:
+                    elapsed = clip_words[i]["end"] - clip_words[0]["start"]
+                    boundaries.append((i, clip_words[i]["end"], elapsed))
+
+        if not boundaries:
+            # Absolute last resort: pecah rata
+            logger.warning("No punctuation or pauses found. Forcing equal split.")
+            num_chunks = max(2, int(duration / TARGET_CLIP_MAX))
+            chunk_size = len(clip_words) // num_chunks
+            for i in range(1, num_chunks):
+                idx = i * chunk_size
+                if idx < len(clip_words):
+                    elapsed = clip_words[idx]["end"] - clip_words[0]["start"]
+                    boundaries.append((idx, clip_words[idx]["end"], elapsed))
+            
+            if not boundaries:
+                result.append(clip)
+                continue
+
+        # Pilih titik potong: target setiap ~TARGET_CLIP_MAX detik
+        sub_start_idx = 0
+        sub_clips = []
+        accumulated = 0.0
+        clip_start_time = clip_words[0]["start"]
+
+        for bi, (word_idx, end_time, elapsed_from_start) in enumerate(boundaries):
+            segment_duration = end_time - (clip_words[sub_start_idx]["start"])
+
+            if segment_duration >= TARGET_CLIP_MAX or bi == len(boundaries) - 1:
+                # Potong di sini
+                sub_words = clip_words[sub_start_idx:word_idx + 1]
+                if sub_words:
+                    s = sub_words[0]["start"]
+                    e = sub_words[-1]["end"]
+
+                    # Gunakan judul asli dengan penanda bagian agar lebih deskriptif
+                    original_title = clip.get("title", f"Klip {clip.get('index', 1)}")
+                    title = f"{original_title} (Bagian {len(sub_clips) + 1})"
+
+                    sub_clips.append({
+                        "index": 0,  # akan di-reindex nanti
+                        "start": round(s, 3),
+                        "end": round(e, 3),
+                        "duration": round(e - s, 3),
+                        "score": clip.get("score", 70),
+                        "category": clip.get("category", "Key Point"),
+                        "title": title,
+                        "words": sub_words,
+                    })
+
+                sub_start_idx = word_idx + 1
+
+        # Sisa kata setelah boundary terakhir
+        if sub_start_idx < len(clip_words):
+            remaining = clip_words[sub_start_idx:]
+            if remaining and len(remaining) > 5:
+                s = remaining[0]["start"]
+                e = remaining[-1]["end"]
+                original_title = clip.get("title", f"Klip {clip.get('index', 1)}")
+                title = f"{original_title} (Bagian {len(sub_clips) + 1})"
+                sub_clips.append({
+                    "index": 0,
+                    "start": round(s, 3),
+                    "end": round(e, 3),
+                    "duration": round(e - s, 3),
+                    "score": clip.get("score", 70),
+                    "category": clip.get("category", "Key Point"),
+                    "title": title,
+                    "words": remaining,
+                })
+            elif remaining and sub_clips:
+                # Terlalu pendek → gabung ke clip terakhir
+                last = sub_clips[-1]
+                last["end"] = round(remaining[-1]["end"], 3)
+                last["duration"] = round(last["end"] - last["start"], 3)
+                last["words"] = last["words"] + remaining
+
+        if sub_clips:
+            logger.info(f"Split into {len(sub_clips)} sub-clips")
+            result.extend(sub_clips)
+        else:
+            result.append(clip)
+
+    # Re-index semua clips
+    for i, clip in enumerate(result):
+        clip["index"] = i + 1
+
+    return result
+
+
+def _force_split_single_clip(
+    clips: list[dict],
+    words: list[dict],
+    total_duration: float,
+    max_clips: int,
+) -> list[dict]:
+    """
+    Jika hanya ada 0-1 clip untuk video panjang (>3 menit), paksa pecah
+    menggunakan sentence boundaries. Ini adalah safety net terakhir agar
+    user selalu mendapat BEBERAPA clip.
+    """
+    import re
+
+    def is_sentence_end(word: str) -> bool:
+        if not word: return False
+        return bool(re.search(r'[.!?][\'"”’\]\)]*$', word.strip()))
+
+    if not words:
+        return clips
+
+    # Temukan semua sentence boundaries
+    boundaries = []
+    for i, w in enumerate(words):
+        if is_sentence_end(w["word"]):
+            boundaries.append(i)
+
+    if not boundaries:
+        # Fallback ke jeda panjang
+        for i in range(len(words) - 1):
+            gap = words[i + 1]["start"] - words[i]["end"]
+            if gap > 1.5:
+                boundaries.append(i)
+
+    if len(boundaries) < 2:
+        # Absolute last resort: pecah rata
+        logger.warning("No punctuation or pauses found in video. Forcing equal split.")
+        target_clips = min(max_clips, max(2, int(total_duration / TARGET_CLIP_MAX)))
+        chunk_size = len(words) // target_clips
+        for i in range(1, target_clips):
+            idx = i * chunk_size
+            if idx < len(words):
+                boundaries.append(idx)
+        
+        if len(boundaries) < 2:
+            return clips
+
+    # Target: pecah menjadi max_clips segmen
+    target_clips = min(max_clips, max(2, int(total_duration / TARGET_CLIP_MAX)))
+    boundaries_per_seg = max(1, len(boundaries) // target_clips)
+
+    result = []
+    seg_start = 0
+
+    for i in range(target_clips):
+        if i == target_clips - 1:
+            bnd_idx = boundaries[-1]
+        else:
+            pick = min(boundaries_per_seg * (i + 1) - 1, len(boundaries) - 1)
+            bnd_idx = boundaries[pick]
+
+        seg_words = words[seg_start:bnd_idx + 1]
+        if not seg_words:
+            seg_start = bnd_idx + 1
+            continue
+
+        s = seg_words[0]["start"]
+        e = seg_words[-1]["end"]
+        original_title = clips[0].get("title", "Highlight") if clips else "Highlight"
+        title = f"{original_title} (Bagian {len(result) + 1})"
+
+        result.append({
+            "index": len(result) + 1,
+            "start": round(s, 3),
+            "end": round(e, 3),
+            "duration": round(e - s, 3),
+            "score": 70,
+            "category": "Key Point",
+            "title": title,
+            "words": seg_words,
+        })
+
+        seg_start = bnd_idx + 1
+
+    # Sisa kata
+    if seg_start < len(words) and result:
+        remaining = words[seg_start:]
+        if remaining:
+            last = result[-1]
+            last["end"] = round(remaining[-1]["end"], 3)
+            last["duration"] = round(last["end"] - last["start"], 3)
+            last["words"] = last["words"] + remaining
+
+    logger.info(f"Force-split: {len(result)} clips from single clip")
+    return result if result else clips
 
 
 # ──────────────────────────────────────────────
@@ -586,55 +833,157 @@ def _retry_with_fewer_clips(cfg: dict, transcript_text: str, total_duration: flo
 
 
 
+def _is_sentence_end(word: str) -> bool:
+    """Cek apakah kata mengakhiri kalimat (diakhiri ., !, atau ?)."""
+    import re
+    if not word: return False
+    return bool(re.search(r'[.!?][\'"”’\]\)]*$', word.strip()))
+
+
+def _generate_keyword_title(words_list: list[dict]) -> str:
+    """Buat judul berbasis topik dengan mengekstrak kata kunci terbanyak."""
+    from collections import Counter
+    import re
+    stopwords = {
+        "yang", "dan", "di", "ke", "dari", "ini", "itu", "untuk", "dengan",
+        "saya", "kita", "kami", "kamu", "dia", "mereka", "ada", "adalah",
+        "akan", "bisa", "tidak", "ya", "halo", "hari", "jadi", "kalau",
+        "karena", "seperti", "tapi", "juga", "sudah", "dalam", "pada",
+        "atau", "saat", "buat", "biar", "lagi", "terus", "lalu", "lebih",
+        "sangat", "paling", "banyak", "berapa", "apa", "bagaimana", "kenapa",
+        "mengapa", "mana", "siapa", "kapan", "hal", "orang", "satu", "dua",
+        "tiga", "semua", "sama", "aja", "saja", "kan", "dong", "sih", "nih",
+        "tuh", "deh", "kok", "nya", "pas"
+    }
+    
+    words_clean = []
+    for w in words_list:
+        word = w["word"].lower()
+        word = re.sub(r'[^a-z0-9]', '', word)
+        if len(word) >= 4 and word not in stopwords:
+            words_clean.append(word)
+            
+    if not words_clean:
+        return ""
+        
+    counts = Counter(words_clean)
+    top_words = [item[0] for item in counts.most_common(3)]
+    
+    if len(top_words) >= 1:
+        return "Topik: " + ", ".join(top_words).title()
+    return ""
+
+
 def _fallback_find_clips(
     words: list[dict],
     total_duration: float,
     max_clips: int,
 ) -> list[dict]:
     """
-    Simple fallback if LLM fails entirely.
-    Divides video into equal segments.
+    Sentence-aware fallback jika LLM gagal sepenuhnya.
+    Alih-alih membagi video rata per 60 detik (yang PASTI memotong
+    informasi di tengah kalimat), fallback ini:
+    1. Menemukan semua sentence boundary (kata diakhiri . ! ?)
+    2. Membagi video di titik-titik boundary tersebut
+    3. Setiap clip dijamin mulai dan berakhir di kalimat yang utuh
     """
-    logger.warning("Using fallback clip finder (LLM was unavailable)")
+    logger.warning("Using sentence-aware fallback clip finder (LLM was unavailable)")
 
     if not words or total_duration == 0:
         return []
 
-    clip_duration = 60  # 60-second fallback segments
-    num_segments = min(max_clips, max(1, int(total_duration / clip_duration)))
-    segment_duration = total_duration / num_segments
+    # ── 1. Temukan semua posisi akhir kalimat ──
+    sentence_boundaries: list[int] = []
+    for i, w in enumerate(words):
+        if _is_sentence_end(w["word"]):
+            sentence_boundaries.append(i)
+
+    # Jika tidak ada sentence boundary ditemukan (transkrip tanpa tanda baca),
+    # gunakan jeda panjang antar kata (>1.5 detik) sebagai pemisah alami
+    if not sentence_boundaries:
+        logger.info("No sentence boundaries found, using pause-based splitting")
+        for i in range(len(words) - 1):
+            gap = words[i + 1]["start"] - words[i]["end"]
+            if gap > 1.5:
+                sentence_boundaries.append(i)
+
+    # Masih kosong? Fallback ke pembagian rata (last resort)
+    if not sentence_boundaries:
+        logger.warning("No boundaries found at all, using simple equal division")
+        segment_count = min(max_clips, max(1, int(total_duration / 60)))
+        segment_dur = total_duration / segment_count
+        result = []
+        for i in range(segment_count):
+            s = i * segment_dur
+            e = min((i + 1) * segment_dur, total_duration)
+            cw = [w for w in words if w["start"] >= s and w["end"] <= e]
+            if cw:
+                s, e = cw[0]["start"], cw[-1]["end"]
+            hw = " ".join(w["word"] for w in cw[:12]).strip()
+            if hw and not hw.endswith((".", "!", "?")):
+                hw += "..."
+            kw_title = _generate_keyword_title(cw)
+            result.append({
+                "index": i + 1, "start": round(s, 3), "end": round(e, 3),
+                "duration": round(e - s, 3), "score": 50,
+                "category": "Key Point", "title": kw_title or hw or f"Bagian {i + 1}",
+                "words": cw,
+            })
+        return result
+
+    # ── 2. Buat klip maksimal 120 detik, tersebar merata ──
+    num_segments = min(max_clips, len(sentence_boundaries))
+    if num_segments <= 0:
+        num_segments = 1
+
+    gap = total_duration / num_segments
+    target_duration = 120.0 # Maksimal 2 menit per klip fallback
 
     result = []
+    
     for i in range(num_segments):
-        start = i * segment_duration
-        end = min(start + clip_duration, total_duration)
+        target_start = i * gap
+        target_end = min(target_start + target_duration, total_duration)
+        
+        # Ambil kata-kata di rentang waktu ini
+        clip_words = [w for w in words if w["start"] >= target_start and w["end"] <= target_end]
+        
+        if not clip_words:
+            continue
 
-        clip_words = [
-            w for w in words
-            if w["start"] >= start and w["end"] <= end
-        ]
+        start = clip_words[0]["start"]
+        end = clip_words[-1]["end"]
+        
+        # Snap ke sentence boundary jika memungkinkan
+        # Cari boundary pertama setelah target_start
+        s_bound = next((w for w in clip_words if _is_sentence_end(w["word"])), None)
+        if s_bound and s_bound["end"] < end - 10:
+             # Mulai dari kata SETELAH kalimat pertama berakhir
+             idx = clip_words.index(s_bound)
+             if idx + 1 < len(clip_words):
+                 clip_words = clip_words[idx + 1:]
+                 start = clip_words[0]["start"]
 
-        if clip_words:
-            start = clip_words[0]["start"]
-            end = clip_words[-1]["end"]
-
-        # Buat judul hook dari kata-kata pertama klip yang informatif
-        hook_words = [w["word"] for w in clip_words[:20]]
+        # Buat judul hook dari kata kunci terbanyak di klip ini
+        keyword_title = _generate_keyword_title(clip_words)
+        
+        hook_words = [w["word"] for w in clip_words[:12]]
         hook_text = " ".join(hook_words).strip()
-        # Ambil maksimal 12 kata pertama sebagai hook
-        hook_title = " ".join(hook_text.split()[:12])
-        if hook_title and not hook_title.endswith((".", "!", "?")):
-            hook_title += "..."
+        if hook_text and not hook_text.endswith((".", "!", "?")):
+            hook_text += "..."
+
+        final_title = keyword_title if keyword_title else (hook_text or f"Bagian {len(result) + 1}")
 
         result.append({
-            "index": i + 1,
+            "index": len(result) + 1,
             "start": round(start, 3),
             "end": round(end, 3),
             "duration": round(end - start, 3),
             "score": 50,
             "category": "Key Point",
-            "title": hook_title or f"Bagian {i + 1}",
+            "title": final_title,
             "words": clip_words,
         })
 
+    logger.info(f"Sentence-aware fallback: {len(result)} clips (max 120s each)")
     return result

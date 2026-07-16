@@ -145,6 +145,8 @@ def install_backend_deps() -> bool:
         ("multipart", "python-multipart"),
         ("aiofiles", "aiofiles"),
         ("yt_dlp", "yt-dlp"),
+        ("arq", "arq"),
+        ("redis", "redis"),
     ]
 
     # Cek import di PYTHON_EXE environment (bukan di proses ini)

@@ -4,6 +4,7 @@ Downloads videos at max 720p with merged audio for reasonable file sizes.
 """
 
 import os
+import sys
 import logging
 from typing import Optional, Callable
 
@@ -18,7 +19,6 @@ def get_video_info(url: str) -> dict:
         "quiet": True,
         "no_warnings": True,
         "extract_flat": False,
-        # Dengan deno terinstal, yt-dlp otomatis bisa mendekode semua format
         "http_headers": {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -54,6 +54,8 @@ def download_youtube(
         Full path to the downloaded video file
     """
     os.makedirs(output_dir, exist_ok=True)
+    # Gunakan path absolut yang sudah di-normalize
+    output_dir = os.path.normpath(os.path.abspath(output_dir))
     output_path = os.path.join(output_dir, "original.mp4")
 
     def _progress_hook(d):
@@ -71,21 +73,25 @@ def download_youtube(
             progress_callback(100, "Download complete, merging formats...")
 
     ydl_opts = {
-        # Dengan deno JS runtime terinstal, yt-dlp bisa mendekode semua format YouTube.
-        # Fallback chain: 720p terpisah → resolusi apapun terpisah → single stream
         "format": (
             "bestvideo[height<=720]+bestaudio/"
             "bestvideo+bestaudio/"
             "best"
         ),
-        "outtmpl": output_path,
+        # Gunakan relative outtmpl + paths.home agar yt-dlp benar-benar
+        # menulis file di output_dir tanpa konflik antara paths & outtmpl
+        "outtmpl": "original.%(ext)s",
+        "paths": {
+            "home": output_dir,
+            "temp": output_dir,
+        },
         "merge_output_format": "mp4",
         "progress_hooks": [_progress_hook],
         "quiet": True,
         "no_warnings": True,
         "overwrites": True,
-        # Biarkan yt-dlp menggunakan player client default (dengan deno,
-        # signature decoding bekerja otomatis untuk semua client)
+        "restrictfilenames": True,
+        "windowsfilenames": True,
         "http_headers": {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -93,15 +99,8 @@ def download_youtube(
                 "Chrome/131.0.0.0 Safari/537.36"
             ),
         },
-        # Retry otomatis jika ada error sementara
         "retries": 10,
         "fragment_retries": 10,
-        "postprocessors": [
-            {
-                "key": "FFmpegVideoConvertor",
-                "preferedformat": "mp4",
-            }
-        ],
     }
 
     logger.info(f"Starting download: {url}")
@@ -111,7 +110,16 @@ def download_youtube(
             ydl.download([url])
     except yt_dlp.utils.DownloadError as e:
         logger.error(f"Download failed: {e}")
-        raise RuntimeError(f"Failed to download video: {str(e)}")
+        # Coba fallback: download single stream (lebih stabil di Windows)
+        logger.warning("Retrying with single-stream format (fallback)...")
+        ydl_opts["format"] = "best[height<=720]/best"
+        if "merge_output_format" in ydl_opts:
+            del ydl_opts["merge_output_format"]
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except yt_dlp.utils.DownloadError as e2:
+            raise RuntimeError(f"Failed to download video: {str(e2)}")
 
     # yt-dlp might add extensions, find the actual file
     if os.path.exists(output_path):

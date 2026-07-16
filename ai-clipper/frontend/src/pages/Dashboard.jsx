@@ -183,7 +183,7 @@ export default function Dashboard() {
             </div>
 
             {/* Player */}
-            <div className="auvi-glow-soft rounded-xl overflow-hidden">
+            <div className="rounded-xl overflow-hidden shadow-sm border border-border bg-card">
               <VideoPlayer
                 ref={playerRef}
                 src={originalVideoUrl}
@@ -208,15 +208,15 @@ export default function Dashboard() {
         </div>
 
         {/* Right Column: Clips List */}
-        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col bg-surface overflow-hidden">
+        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col bg-surface overflow-hidden border-l border-border">
 
           {/* Filters Bar */}
-          <div className="flex-shrink-0 p-4 border-b border-border bg-surface sticky top-0 z-10 space-y-3">
+          <div className="flex-shrink-0 p-4 border-b border-border bg-card sticky top-0 z-10 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-sm font-medium">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
                 <Sparkles className="w-4 h-4 text-accent-1" />
                 Your clips
-                <span className="rounded-full bg-card px-2 py-0.5 text-[11px] text-text-muted">{filteredClips.length}</span>
+                <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-text-muted border border-border">{filteredClips.length}</span>
               </div>
             </div>
 
@@ -234,8 +234,8 @@ export default function Dashboard() {
                     onClick={() => setFilter(f.id)}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                       filter === f.id
-                        ? 'auvi-gradient-brand text-white'
-                        : 'bg-card text-text-muted hover:text-text-primary hover:border-accent-1/50 border border-border'
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-card text-text-muted hover:text-text-primary hover:border-slate-300 border border-border'
                     }`}
                   >
                     {f.label}

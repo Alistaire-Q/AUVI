@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
 
-const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false }, ref) => {
+const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, children }, ref) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const isSeeking = useRef(false);
@@ -160,6 +160,9 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false },
         onClick={togglePlay}
       />
       
+      {/* Overlay children (e.g. CaptionOverlay) */}
+      {children}
+
       {/* Controls Overlay */}
       <div className="absolute bottom-0 left-0 right-0 player-controls opacity-0 group-hover:opacity-100 transition-opacity flex-col items-stretch pt-8">
         <div className="flex items-center gap-2 mb-2 w-full">

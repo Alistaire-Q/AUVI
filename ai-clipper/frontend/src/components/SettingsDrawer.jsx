@@ -35,10 +35,10 @@ export default function SettingsDrawer() {
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md auvi-gradient-card border-l border-border z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${translateX}`}
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white border-l border-border z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${translateX}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border bg-white">
           <div className="flex items-center gap-3">
             <Settings2 className="w-6 h-6 text-accent-1" />
             <h2 className="text-xl font-semibold text-text-primary">Processing Settings</h2>
@@ -156,6 +156,92 @@ export default function SettingsDrawer() {
             </div>
           </div>
 
+          {/* Subtitle Customization (burned-in to MP4) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-text-primary">
+              <svg className="w-5 h-5 text-accent-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+              <h3 className="font-semibold">Subtitle Style (MP4)</h3>
+            </div>
+            <p className="text-sm text-text-muted">Customize subtitles burned into the final MP4 clips.</p>
+
+            {/* Subtitle enabled toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+              <span className="text-sm font-medium text-text-primary">Show subtitles in clips</span>
+              <button
+                onClick={() => handleChange('subtitle_enabled', !localSettings.subtitle_enabled)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${localSettings.subtitle_enabled ? 'bg-accent-1' : 'bg-border'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${localSettings.subtitle_enabled ? 'translate-x-6' : ''}`} />
+              </button>
+            </div>
+
+            {localSettings.subtitle_enabled && (
+              <>
+                {/* Subtitle Style */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'tiktok', label: 'TikTok Style', desc: 'Yellow bold text' },
+                    { id: 'standard', label: 'Standard', desc: 'White clean text' },
+                  ].map(st => (
+                    <button
+                      key={st.id}
+                      className={`p-3 rounded-lg border text-left transition-all ${
+                        localSettings.subtitle_style === st.id
+                          ? 'border-accent-1 bg-accent-1/5'
+                          : 'border-border bg-card hover:border-text-muted/50'
+                      }`}
+                      onClick={() => handleChange('subtitle_style', st.id)}
+                    >
+                      <span className={`block text-xs font-medium ${localSettings.subtitle_style === st.id ? 'text-accent-1' : 'text-text-primary'}`}>
+                        {st.label}
+                      </span>
+                      <span className="block text-[10px] text-text-muted mt-0.5">{st.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Font Size */}
+                <div>
+                  <span className="block text-xs text-text-muted mb-2">Font size</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'small', label: 'Small' },
+                      { id: 'medium', label: 'Medium' },
+                      { id: 'large', label: 'Large' },
+                    ].map(sz => (
+                      <button
+                        key={sz.id}
+                        className={`py-2 rounded-lg border text-sm font-medium transition-all ${
+                          localSettings.subtitle_font_size === sz.id
+                            ? 'border-accent-1 bg-accent-1/10 text-accent-1'
+                            : 'border-border bg-card text-text-muted hover:border-text-muted'
+                        }`}
+                        onClick={() => handleChange('subtitle_font_size', sz.id)}
+                      >
+                        {sz.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Position indicator */}
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-accent-1 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                    <div>
+                      <span className="block text-xs font-medium text-text-primary">Position: Bottom</span>
+                      <span className="block text-[10px] text-text-muted">Subtitles appear at the bottom of the video</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Min Viral Score */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -185,7 +271,7 @@ export default function SettingsDrawer() {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-border bg-card/60 backdrop-blur flex items-center gap-4 mt-auto">
+        <div className="p-6 border-t border-border bg-slate-50 flex items-center gap-4 mt-auto">
           <button
             onClick={() => {
               resetSettings();

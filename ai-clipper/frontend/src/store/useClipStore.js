@@ -11,6 +11,11 @@ const DEFAULT_SETTINGS = {
   language: 'auto',
   caption_style: 'word',
   min_score: 20,
+  subtitle_enabled: true,
+  subtitle_position: 'bottom',
+  subtitle_font_size: 'medium',
+  subtitle_style: 'tiktok',
+  frame_size: '9:16',
 };
 
 const useClipStore = create((set, get) => ({

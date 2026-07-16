@@ -170,6 +170,12 @@ def _transcribe_chunk(
     if response.status_code != 200:
         error_detail = response.text
         logger.error(f"Groq API error {response.status_code}: {error_detail}")
+        if response.status_code == 401:
+            raise RuntimeError(
+                "Groq API Key tidak valid atau sudah expired! "
+                "Buat key baru (gratis) di https://console.groq.com lalu "
+                "update GROQ_API_KEY di file .env"
+            )
         raise RuntimeError(
             f"Groq API returned error {response.status_code}: {error_detail}"
         )

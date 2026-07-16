@@ -78,6 +78,12 @@ class SettingsSchema(BaseModel):
     language: str = Field(default="auto")  # "auto", "id", "en"
     caption_style: str = Field(default="word")  # "none", "word", "standard"
     min_score: int = Field(default=20, ge=0, le=100)
+    # Subtitle customization (burned-in to MP4 clips via FFmpeg)
+    subtitle_enabled: bool = Field(default=True)
+    subtitle_position: str = Field(default="bottom")  # "top", "middle", "bottom"
+    subtitle_font_size: str = Field(default="medium")  # "small", "medium", "large"
+    subtitle_style: str = Field(default="tiktok")  # "tiktok" (yellow bold), "standard" (white)
+    frame_size: str = Field(default="9:16")  # "9:16", "16:9", "1:1"
 
 
 class ProcessRequest(BaseModel):

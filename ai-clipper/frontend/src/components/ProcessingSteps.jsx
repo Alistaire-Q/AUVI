@@ -60,9 +60,9 @@ export default function ProcessingSteps({ currentStep, progress, message, status
           <span>Progress</span>
           <span className="font-mono font-semibold text-accent-1">{progress}%</span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface">
+        <div className="h-1.5 overflow-hidden rounded-full bg-border">
           <motion.div
-            className="h-full auvi-gradient-brand"
+            className="h-full bg-slate-900"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -95,7 +95,7 @@ export default function ProcessingSteps({ currentStep, progress, message, status
                 <div
                   className={`grid size-8 shrink-0 place-items-center rounded-lg transition-colors ${
                     isCompleted ? 'bg-accent-1/15 text-accent-1'
-                    : isActive ? 'auvi-gradient-brand text-white'
+                    : isActive ? 'bg-slate-900 text-white'
                     : isFailed ? 'bg-danger/15 text-danger'
                     : 'bg-surface text-text-muted'
                   }`}
@@ -176,7 +176,7 @@ export default function ProcessingSteps({ currentStep, progress, message, status
                 {waveform.map((b, i) => (
                   <div
                     key={i}
-                    className="flex-1 rounded-t-sm auvi-gradient-brand transition-all"
+                    className="flex-1 rounded-t-sm bg-slate-900 transition-all"
                     style={{ height: `${Math.max(6, b * 100)}%`, opacity: 0.5 + b * 0.5 }}
                   />
                 ))}
@@ -186,9 +186,9 @@ export default function ProcessingSteps({ currentStep, progress, message, status
                 {scoreBars.map((score, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="w-16 shrink-0 text-[11px] text-text-muted">Clip {i + 1}</span>
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
                       <motion.div
-                        className="h-full auvi-gradient-brand"
+                        className="h-full bg-slate-900"
                         animate={{ width: `${score}%` }}
                         transition={{ duration: 0.2 }}
                       />

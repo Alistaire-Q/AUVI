@@ -12,3 +12,6 @@ sqlalchemy==2.0.32
 pydantic==2.8.0
 numpy<2.0.0
 python-dotenv
+arq==0.25.0
+redis==5.0.3
+psycopg2-binary==2.9.9

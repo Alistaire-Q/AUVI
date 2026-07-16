@@ -116,7 +116,7 @@ export function subscribeToProgress(jobId, { onProgress, onComplete, onError }) 
  * @returns {Promise<Array>}
  */
 export async function getClips(jobId) {
-  const response = await api.get(`/jobs/${jobId}/clips`);
+  const response = await api.get(`/jobs/${jobId}/clips`, { timeout: 120000 });
   return response.data;
 }
 

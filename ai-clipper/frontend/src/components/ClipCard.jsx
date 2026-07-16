@@ -56,7 +56,7 @@ export default function ClipCard({ clip, index = 0 }) {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card/60 backdrop-blur transition-all hover:border-accent-1/40"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md hover:border-accent-1/40"
     >
       {/* Vertical 9:16 preview with real thumbnail */}
       <div className="relative mx-auto mt-3 w-full max-w-[200px]">
@@ -71,13 +71,13 @@ export default function ClipCard({ clip, index = 0 }) {
               className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="absolute inset-0 auvi-grid-bg opacity-30" />
+            <div className="absolute inset-0 bg-slate-100 opacity-30" />
           )}
 
           {/* Score badge */}
           <div className="absolute left-2 top-2">
             <div
-              className={`grid size-9 place-items-center rounded-full bg-gradient-to-br text-xs font-bold text-white shadow-lg ${getScoreGradient(clip.score)}`}
+              className={`grid size-9 place-items-center rounded-full text-xs font-bold text-white shadow-lg ${getScoreGradient(clip.score)}`}
             >
               {clip.score}
             </div>
@@ -119,7 +119,7 @@ export default function ClipCard({ clip, index = 0 }) {
             {getScoreLabel(clip.score)} virality
           </div>
           <h3
-            className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-accent-1 transition-colors"
+            className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-accent-1 text-text-primary transition-colors"
             title={clip.title}
           >
             {clip.title}
@@ -140,9 +140,9 @@ export default function ClipCard({ clip, index = 0 }) {
 
         {/* Score meter */}
         <div className="flex items-center gap-2">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
             <div
-              className={`h-full bg-gradient-to-r ${getScoreGradient(clip.score)}`}
+              className={`h-full ${getScoreGradient(clip.score)}`}
               style={{ width: `${clip.score}%` }}
             />
           </div>
@@ -160,7 +160,7 @@ export default function ClipCard({ clip, index = 0 }) {
           </button>
           <button
             onClick={handleDownload}
-            className="btn-secondary py-2 px-3 hover:text-accent-1 hover:border-accent-1 transition-colors"
+            className="btn-secondary py-2 px-3 hover:text-slate-900 hover:border-slate-900 transition-colors"
             title="Download MP4"
             aria-label="Download"
           >
@@ -168,7 +168,7 @@ export default function ClipCard({ clip, index = 0 }) {
           </button>
           <button
             onClick={handleCopyLink}
-            className="btn-secondary py-2 px-3 hover:text-text-primary transition-colors relative"
+            className="btn-secondary py-2 px-3 hover:text-slate-900 transition-colors relative"
             title="Copy Timestamp Link"
             aria-label="Copy link"
           >

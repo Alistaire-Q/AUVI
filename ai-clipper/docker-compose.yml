@@ -1,23 +1,4 @@
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: auvi-backend
-    ports:
-      - "8000:8000"
-    # volumes:
-      # - ./storage:/app/storage
-      # - ./backend:/app/backend
-    environment:
-      - STORAGE_PATH=/app/storage
-      - GROQ_API_KEY=${GROQ_API_KEY}
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-
   frontend:
     build:
       context: ./frontend
@@ -25,12 +6,91 @@ services:
     container_name: auvi-frontend
     ports:
       - "5173:5173"
-    # volumes:
-    #   - ./frontend:/app/frontend
-    #   - /app/frontend/node_modules
     environment:
-      - VITE_BACKEND_URL=http://backend:8000
+      - VITE_BACKEND_URL=http://localhost:8000
     depends_on:
       - backend
     restart: unless-stopped
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: auvi-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./backend:/app/backend
+    environment:
+      - PYTHONPATH=/app/backend
+      - STORAGE_PATH=/app/storage
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - DATABASE_URL=postgresql://auvi:auvi_password@postgres:5432/auvi
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: auvi-worker
+    command: ["arq", "worker.WorkerSettings"]
+    volumes:
+      - ./storage:/app/storage
+      - ./backend:/app/backend
+    environment:
+      - PYTHONPATH=/app/backend
+      - STORAGE_PATH=/app/storage
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - DATABASE_URL=postgresql://auvi:auvi_password@postgres:5432/auvi
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  redis:
+    image: redis:7-alpine
+    container_name: auvi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: auvi-postgres
+    environment:
+      POSTGRES_DB: auvi
+      POSTGRES_USER: auvi
+      POSTGRES_PASSWORD: auvi_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auvi -d auvi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis_data:
+  postgres_data:

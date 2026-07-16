@@ -92,12 +92,6 @@ export default function Processing() {
 
   return (
     <div className="min-h-screen bg-base relative flex flex-col">
-      {/* Ambient backdrop */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-accent-1/15 blur-[140px]" />
-        <div className="absolute inset-0 auvi-grid-bg opacity-25 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-      </div>
-
       {/* Header */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 py-5 flex justify-between items-center">
         <div className="flex items-center gap-3">

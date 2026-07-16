@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
-import { Youtube, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { processUrl } from '../lib/api';
-import useClipStore from '../store/useClipStore';
+import { Youtube, ArrowRight, AlertCircle } from 'lucide-react';
 
-export default function YouTubeInput() {
+export default function YouTubeInput({ onSubmitUrl }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { settings, addRecentProject } = useClipStore();
 
   const validateUrl = (url) => {
     const regex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[\w\-]{11}/;
@@ -30,35 +24,8 @@ export default function YouTubeInput() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const result = await processUrl(url, settings);
-
-      // Fetch judul YouTube dari backend (sudah tersimpan saat get_video_info)
-      let videoTitle = url;
-      try {
-        const { getJob } = await import('../lib/api');
-        const jobInfo = await getJob(result.job_id);
-        if (jobInfo.title && jobInfo.title !== 'Untitled') {
-          videoTitle = jobInfo.title;
-        }
-      } catch {
-        // Fallback ke URL jika gagal fetch judul
-      }
-
-      addRecentProject({
-        id: result.job_id,
-        title: videoTitle,
-        source: 'youtube',
-        date: new Date().toISOString(),
-      });
-
-      navigate(`/processing/${result.job_id}`);
-    } catch (err) {
-      const message = err.response?.data?.detail || err.message || 'Failed to process URL';
-      setError(message);
-      setIsLoading(false);
+    if (onSubmitUrl) {
+      onSubmitUrl(url);
     }
   };
 
@@ -74,22 +41,15 @@ export default function YouTubeInput() {
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste a YouTube video or Shorts link…"
           className="input-field h-12 pl-12 pr-36 text-base shadow-none text-text-primary"
-          disabled={isLoading}
         />
         <div className="absolute right-1.5">
           <button
             type="submit"
-            disabled={isLoading || !url.trim()}
+            disabled={!url.trim()}
             className="btn-primary py-2 px-4 shadow-none gap-1.5"
           >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <span>Get clips</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
+            <span>Options</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </form>
