@@ -1023,8 +1023,6 @@ Copyright (c) 2026 Olly
 
 <div align="center">
 
-**Dibuat dengan ❤️ menggunakan AI**
-
 *Selamat memotong video! 🎬✨*
 
 </div>
