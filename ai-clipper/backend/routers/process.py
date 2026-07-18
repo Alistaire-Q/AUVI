@@ -42,8 +42,9 @@ async def _redis_is_available() -> bool:
     if _USE_ARQ is not None:
         return _USE_ARQ
     try:
-        from arq.connections import create_pool, RedisSettings
-        pool = await create_pool(RedisSettings(host=REDIS_HOST, port=REDIS_PORT))
+        from arq.connections import create_pool
+        from redis_client import get_redis_settings
+        pool = await create_pool(get_redis_settings())
         await pool.close()
         _USE_ARQ = True
         logger.info("Redis is reachable → using ARQ worker mode")
@@ -116,8 +117,9 @@ async def process_url(
 
     if await _redis_is_available():
         # Docker mode → enqueue to ARQ worker
-        from arq.connections import create_pool, RedisSettings
-        redis = await create_pool(RedisSettings(host=REDIS_HOST, port=REDIS_PORT))
+        from arq.connections import create_pool
+        from redis_client import get_redis_settings
+        redis = await create_pool(get_redis_settings())
         await redis.enqueue_job('process_video_pipeline', job.id)
         logger.info(f"Job {job.id} enqueued to ARQ")
     else:
@@ -126,6 +128,26 @@ async def process_url(
         logger.info(f"Job {job.id} started inline (local mode)")
 
     return {"job_id": job.id}
+
+
+@router.get("/jobs")
+async def get_all_jobs(db: Session = Depends(get_db)):
+    """Get all jobs."""
+    jobs = db.query(Job).order_by(Job.created_at.desc()).all()
+    
+    # We can use JobResponse for each, or just return a simple list
+    result = []
+    for job in jobs:
+        # Don't count clips to save DB queries, or do it efficiently.
+        result.append({
+            "id": job.id,
+            "status": job.status,
+            "source_type": job.source_type,
+            "url": job.url,
+            "title": job.title,
+            "created_at": job.created_at,
+        })
+    return result
 
 
 @router.get("/jobs/{job_id}/progress")

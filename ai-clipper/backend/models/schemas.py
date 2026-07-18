@@ -20,6 +20,20 @@ from database import Base
 # SQLAlchemy ORM Models
 # ──────────────────────────────────────────────
 
+class LinkedAccount(Base):
+    __tablename__ = "linked_accounts"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    platform = Column(String, default="youtube")
+    channel_id = Column(String, nullable=True)
+    channel_name = Column(String, nullable=True)
+    access_token = Column(String, nullable=False)
+    refresh_token = Column(String, nullable=True)
+    preferences = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Job(Base):
     __tablename__ = "jobs"
 
@@ -57,6 +71,8 @@ class Clip(Base):
     words_json = Column(Text, default="[]")  # JSON string of word-level timestamps
     thumbnail_path = Column(String, nullable=True)
     clip_path = Column(String, nullable=True)
+    approval_status = Column(String, default="pending")
+    published_url = Column(String, nullable=True)
 
     job = relationship("Job", back_populates="clips")
 
@@ -85,6 +101,12 @@ class SettingsSchema(BaseModel):
     subtitle_style: str = Field(default="tiktok")  # "tiktok" (yellow bold), "standard" (white)
     frame_size: str = Field(default="9:16")  # "9:16", "16:9", "1:1"
 
+
+class PreferencesSchema(BaseModel):
+    frame_size: str = Field(default="9:16")
+    subtitle_style: str = Field(default="tiktok")
+    subtitle_position: str = Field(default="bottom")
+    default_tags: str = Field(default="#shorts #podcast #auvi")
 
 class ProcessRequest(BaseModel):
     url: str
@@ -136,6 +158,8 @@ class ClipResponse(BaseModel):
     thumbnail_url: Optional[str] = None
     download_url: Optional[str] = None
     stream_url: Optional[str] = None
+    approval_status: str = "pending"
+    published_url: Optional[str] = None
 
     class Config:
         from_attributes = True

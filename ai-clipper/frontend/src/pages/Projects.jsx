@@ -4,26 +4,41 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, PlaySquare, Video, Trash2, Calendar, Loader2 } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 import Logo from '../components/Logo';
+import { getJobs, deleteJob } from '../lib/api';
 
 export default function Projects() {
   const navigate = useNavigate();
-  const { getRecentProjects, removeRecentProject } = useClipStore();
+  const { language } = useClipStore();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate network delay to give a SaaS feel
-    setTimeout(() => {
-      setProjects(getRecentProjects());
-      setLoading(false);
-    }, 400);
+    getJobs()
+      .then(jobs => {
+        const formatted = jobs.map(j => ({
+          id: j.id,
+          title: j.title || j.url || 'Untitled Video',
+          source: j.source_type || 'youtube',
+          date: j.created_at,
+          status: j.status
+        }));
+        setProjects(formatted);
+      })
+      .catch(err => console.error("Failed to load jobs:", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = (e, id) => {
+  const handleDelete = async (e, id) => {
     e.preventDefault();
     e.stopPropagation();
-    removeRecentProject(id);
-    setProjects(getRecentProjects());
+    if (!window.confirm("Are you sure you want to delete this project?")) return;
+    
+    try {
+      await deleteJob(id);
+      setProjects(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error("Failed to delete job:", err);
+    }
   };
 
   return (
@@ -38,7 +53,7 @@ export default function Projects() {
           className="btn-secondary py-2 border-transparent hover:border-border"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">New Clip</span>
+          <span className="text-sm">{language === 'id' ? 'Klip Baru' : 'New Clip'}</span>
         </button>
       </header>
 
@@ -46,8 +61,12 @@ export default function Projects() {
       <main className="relative z-10 flex-grow w-full max-w-5xl mx-auto px-4 md:px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-primary">Your Projects</h1>
-            <p className="text-sm text-text-muted mt-1">Manage and view your previously processed videos.</p>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text-primary">
+              {language === 'id' ? 'Proyek Anda' : 'Your Projects'}
+            </h1>
+            <p className="text-sm text-text-muted mt-1">
+              {language === 'id' ? 'Kelola dan lihat video yang Anda proses sebelumnya.' : 'Manage and view your previously processed videos.'}
+            </p>
           </div>
         </div>
 
@@ -58,12 +77,16 @@ export default function Projects() {
         ) : projects.length === 0 ? (
           <div className="text-center py-20 rounded-2xl border border-dashed border-border bg-card/30 backdrop-blur">
             <PlaySquare className="w-12 h-12 text-text-muted mx-auto mb-3 opacity-50" />
-            <h3 className="text-lg font-medium text-text-primary">No projects yet</h3>
+            <h3 className="text-lg font-medium text-text-primary">
+              {language === 'id' ? 'Belum ada proyek' : 'No projects yet'}
+            </h3>
             <p className="text-sm text-text-muted mt-1 max-w-md mx-auto">
-              You haven't generated any clips yet. Go back to the home page to start your first viral project.
+              {language === 'id' 
+                ? 'Anda belum menghasilkan klip apa pun. Kembali ke beranda untuk memulai proyek viral pertama Anda.' 
+                : 'You haven\'t generated any clips yet. Go back to the home page to start your first viral project.'}
             </p>
             <button onClick={() => navigate('/')} className="mt-6 btn-primary">
-              Create New Project
+              {language === 'id' ? 'Buat Proyek Baru' : 'Create New Project'}
             </button>
           </div>
         ) : (
@@ -92,7 +115,9 @@ export default function Projects() {
                   </div>
                   
                   <h3 className="text-base font-semibold text-text-primary line-clamp-2 mb-2" title={project.title}>
-                    {project.title || "Untitled Project"}
+                    {project.title && project.title.startsWith('http') 
+                        ? (project.title.includes('v=') ? `YouTube Video (${project.title.split('v=')[1].substring(0, 11)})` : (project.title.includes('youtu.be/') ? `YouTube Video (${project.title.split('youtu.be/')[1].substring(0, 11)})` : 'YouTube Video')) 
+                        : (project.title || "Untitled Project")}
                   </h3>
                   
                   <div className="flex items-center gap-4 mt-auto pt-4 border-t border-border/50">
@@ -105,7 +130,7 @@ export default function Projects() {
                       })}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-medium text-accent-1">
-                      View Clips →
+                      {language === 'id' ? 'Lihat Klip' : 'View Clips'} →
                     </div>
                   </div>
                 </Link>

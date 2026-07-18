@@ -156,6 +156,8 @@ async def get_job_clips(job_id: str, db: Session = Depends(get_db)):
             thumbnail_url=f"/storage/{clip.thumbnail_path}" if clip.thumbnail_path else None,
             download_url=f"/api/clips/{clip.id}/download",
             stream_url=f"/api/clips/{clip.id}/stream",
+            approval_status=clip.approval_status,
+            published_url=clip.published_url,
         ))
 
     return result
@@ -217,5 +219,54 @@ async def get_clip(clip_id: str, db: Session = Depends(get_db)):
         thumbnail_url=f"/storage/{clip.thumbnail_path}" if clip.thumbnail_path else None,
         download_url=f"/api/clips/{clip.id}/download",
         stream_url=f"/api/clips/{clip.id}/stream",
+        approval_status=clip.approval_status,
+        published_url=clip.published_url,
     )
+
+
+@router.post("/clips/{clip_id}/approve")
+async def approve_clip(clip_id: str, db: Session = Depends(get_db)):
+    """Approve a clip and enqueue it for YouTube Shorts upload."""
+    clip = db.query(Clip).filter(Clip.id == clip_id).first()
+    if not clip:
+        raise HTTPException(status_code=404, detail="Clip not found")
+
+    clip.approval_status = "approved"
+    db.commit()
+
+    from arq.connections import create_pool
+    from redis_client import get_redis_settings
+    redis = await create_pool(get_redis_settings())
+    await redis.enqueue_job("upload_clip_task", clip.id)
+
+    return {"status": "success", "message": "Clip approved and queued for upload"}
+
+
+@router.post("/clips/{clip_id}/reject")
+async def reject_clip(clip_id: str, db: Session = Depends(get_db)):
+    """Reject a clip and delete it."""
+    clip = db.query(Clip).filter(Clip.id == clip_id).first()
+    if not clip:
+        raise HTTPException(status_code=404, detail="Clip not found")
+
+    # Delete physical files
+    if clip.clip_path:
+        clip_abs = os.path.join(STORAGE_PATH, clip.clip_path)
+        if os.path.exists(clip_abs):
+            try:
+                os.remove(clip_abs)
+            except:
+                pass
+    if clip.thumbnail_path:
+        thumb_abs = os.path.join(STORAGE_PATH, clip.thumbnail_path)
+        if os.path.exists(thumb_abs):
+            try:
+                os.remove(thumb_abs)
+            except:
+                pass
+
+    db.delete(clip)
+    db.commit()
+
+    return {"status": "success", "message": "Clip deleted"}
 

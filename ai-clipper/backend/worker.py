@@ -3,10 +3,11 @@ import json
 import logging
 from datetime import datetime
 from arq import worker
-from arq.connections import RedisSettings
+from redis_client import get_redis_settings
 
 from database import SessionLocal, STORAGE_PATH
-from models.schemas import Job, Clip
+from models.schemas import Job, Clip, LinkedAccount
+from services.youtube_api import upload_video_to_shorts
 from services.downloader import download_youtube, get_video_info
 from services.transcriber import extract_audio, transcribe
 from services.analyzer import find_best_clips
@@ -16,8 +17,7 @@ from services.clipper import generate_clip, generate_thumbnail, get_video_durati
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+# Redis settings are now handled by redis_client.py
 
 async def startup(ctx):
     logger.info("Worker starting up...")
@@ -165,8 +165,55 @@ async def process_video_pipeline(ctx, job_id: str):
         db.close()
 
 
+async def upload_clip_task(ctx, clip_id: str):
+    logger.info(f"Worker picked up upload task for clip: {clip_id}")
+    db = SessionLocal()
+    try:
+        clip = db.query(Clip).filter(Clip.id == clip_id).first()
+        if not clip:
+            logger.error(f"Clip {clip_id} not found")
+            return
+            
+        account = db.query(LinkedAccount).first()
+        if not account or not account.access_token:
+            logger.error("No linked YouTube account found for upload")
+            clip.approval_status = "failed"
+            db.commit()
+            return
+            
+        clip_abs_path = os.path.join(STORAGE_PATH, clip.clip_path)
+        
+        description = f"Generated automatically by AUVI.\n\nCategory: {clip.category}\nScore: {clip.score}/100"
+        
+        # Parse tags from preferences
+        tags = []
+        if account.preferences and "default_tags" in account.preferences:
+            tags_str = account.preferences["default_tags"]
+            tags = [t.strip().replace("#", "") for t in tags_str.split() if t.strip()]
+
+        try:
+            video_id = await upload_video_to_shorts(
+                access_token=account.access_token,
+                file_path=clip_abs_path,
+                title=clip.title,
+                description=description,
+                tags=tags
+            )
+            
+            if video_id:
+                clip.published_url = f"https://youtube.com/shorts/{video_id}"
+                clip.approval_status = "published"
+                db.commit()
+                logger.info(f"Successfully uploaded clip {clip_id} to YouTube Shorts: {video_id}")
+        except Exception as e:
+            logger.error(f"Upload failed for clip {clip_id}: {e}")
+            clip.approval_status = "failed"
+            db.commit()
+    finally:
+        db.close()
+
 class WorkerSettings:
-    redis_settings = RedisSettings(host=REDIS_HOST, port=REDIS_PORT)
-    functions = [process_video_pipeline]
+    redis_settings = get_redis_settings()
+    functions = [process_video_pipeline, upload_clip_task]
     on_startup = startup
     on_shutdown = shutdown

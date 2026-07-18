@@ -20,6 +20,18 @@
   --danger: #EF4444;
 }
 
+/* ─── Design System CSS Custom Properties (Dark Theme) ─── */
+.dark {
+  --bg-base: #000000; /* true black */
+  --bg-surface: #111111; /* very dark grey */
+  --bg-card: #111111; /* very dark grey */
+  --bg-card-hover: #1A1A1A; /* slightly lighter grey */
+  --text-primary: #FFFFFF; /* pure white */
+  --text-muted: #A1A1AA; /* neutral zinc-400 */
+  --text-hint: #71717A; /* neutral zinc-500 */
+  --border: #27272A; /* neutral zinc-800 */
+}
+
 /* ─── Global Resets ─── */
 *, *::before, *::after {
   box-sizing: border-box;

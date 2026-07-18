@@ -1,11 +1,40 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Download, Copy, CheckCircle, Flame, Scissors, Clock } from 'lucide-react';
+import { Play, Download, Copy, CheckCircle, Flame, Scissors, Clock, UploadCloud, Youtube } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 
 export default function ClipCard({ clip, index = 0 }) {
   const { openPreview } = useClipStore();
   const [copied, setCopied] = useState(false);
+  const [localStatus, setLocalStatus] = useState(clip.approval_status || 'pending');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleApprove = async (e) => {
+    e.stopPropagation();
+    setIsProcessing(true);
+    try {
+      await fetch(`http://localhost:8000/api/clips/${clip.id}/approve`, { method: 'POST' });
+      setLocalStatus('approved');
+    } catch (err) {
+      console.error(err);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleReject = async (e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this draft clip?")) return;
+    
+    setIsProcessing(true);
+    try {
+      await fetch(`http://localhost:8000/api/clips/${clip.id}/reject`, { method: 'POST' });
+      setLocalStatus('rejected');
+      // If we are in Dashboard, it might be good to remove it from state, but for now setting local status to 'rejected' hides it or dims it.
+    } catch (err) {
+      console.error(err);
+      setIsProcessing(false);
+    }
+  };
 
   const getScoreGradient = (score) => {
     if (score >= 70) return 'from-fuchsia-500 to-orange-400';
@@ -50,6 +79,10 @@ export default function ClipCard({ clip, index = 0 }) {
       document.body.removeChild(a);
     }
   };
+
+  if (localStatus === 'rejected') {
+    return null; // Hide rejected/deleted clips
+  }
 
   return (
     <motion.div
@@ -150,31 +183,71 @@ export default function ClipCard({ clip, index = 0 }) {
         </div>
 
         {/* Actions */}
-        <div className="mt-auto flex items-center gap-1.5 pt-2">
-          <button
-            onClick={() => openPreview(clip)}
-            className="flex-1 btn-primary py-2 px-3 text-sm shadow-none gap-1.5"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>Preview</span>
-          </button>
-          <button
-            onClick={handleDownload}
-            className="btn-secondary py-2 px-3 hover:text-slate-900 hover:border-slate-900 transition-colors"
-            title="Download MP4"
-            aria-label="Download"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleCopyLink}
-            className="btn-secondary py-2 px-3 hover:text-slate-900 transition-colors relative"
-            title="Copy Timestamp Link"
-            aria-label="Copy link"
-          >
-            {copied ? <CheckCircle className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-          </button>
-        </div>
+        {localStatus === 'published' ? (
+          <div className="mt-auto flex items-center gap-2 pt-2">
+            <a 
+              href={clip.published_url || '#'} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex-1 btn-primary py-2 px-3 text-sm shadow-none gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Youtube className="w-4 h-4" />
+              View on YouTube
+            </a>
+          </div>
+        ) : (
+          <div className="mt-auto flex items-center gap-1.5 pt-2">
+            <button
+              onClick={() => openPreview(clip)}
+              className="flex-1 btn-primary py-2 px-3 text-sm shadow-none gap-1.5"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span>Preview</span>
+            </button>
+            
+            {localStatus === 'pending' || localStatus === 'rejected' ? (
+              <button
+                onClick={handleApprove}
+                disabled={isProcessing}
+                className="btn-secondary py-2 px-3 hover:text-green-600 hover:border-green-600 transition-colors bg-green-500/10 text-green-600 border-green-500/20"
+                title="Approve & Upload to YouTube"
+              >
+                {isProcessing ? <div className="w-4 h-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" /> : <UploadCloud className="w-4 h-4" />}
+              </button>
+            ) : (
+              <div className="py-2 px-3 flex items-center gap-1 text-xs font-medium text-amber-500 bg-amber-500/10 rounded border border-amber-500/20">
+                <div className="w-3 h-3 animate-pulse rounded-full bg-amber-500" />
+                Uploading...
+              </div>
+            )}
+            
+            <button
+              onClick={handleDownload}
+              className="btn-secondary py-2 px-3 hover:text-slate-900 hover:border-slate-900 transition-colors"
+              title="Download MP4"
+              aria-label="Download"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={isProcessing}
+              className="btn-secondary py-2 px-3 hover:text-red-600 hover:border-red-600 transition-colors"
+              title="Delete Draft"
+              aria-label="Delete"
+            >
+              <svg xmlns="http://www.w3.org/2005/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="btn-secondary py-2 px-3 hover:text-slate-900 transition-colors relative"
+              title="Copy Timestamp Link"
+              aria-label="Copy link"
+            >
+              {copied ? <CheckCircle className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );

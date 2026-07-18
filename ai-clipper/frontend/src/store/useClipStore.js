@@ -72,6 +72,8 @@ const useClipStore = create((set, get) => ({
 
   // ─── UI State ───
   settingsOpen: false,
+  language: 'en', // 'en' or 'id'
+  setLanguage: (lang) => set({ language: lang }),
   toggleSettings: () => set((state) => ({ settingsOpen: !state.settingsOpen })),
   closeSettings: () => set({ settingsOpen: false }),
 

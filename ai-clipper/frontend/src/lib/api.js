@@ -59,6 +59,15 @@ export async function getJob(jobId) {
 }
 
 /**
+ * Get all jobs.
+ * @returns {Promise<Array>}
+ */
+export async function getJobs() {
+  const response = await api.get(`/jobs`);
+  return response.data;
+}
+
+/**
  * Subscribe to job progress via Server-Sent Events.
  * @param {string} jobId
  * @param {function} onProgress - Callback for progress events

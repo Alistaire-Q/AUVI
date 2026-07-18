@@ -11,7 +11,9 @@ STORAGE_PATH = os.environ.get("STORAGE_PATH", os.path.join(os.path.dirname(__fil
 os.makedirs(STORAGE_PATH, exist_ok=True)
 
 # Default to SQLite if DATABASE_URL is not provided (for local testing without docker)
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(STORAGE_PATH, 'ai_clipper.db')}")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    DATABASE_URL = f"sqlite:///{os.path.join(STORAGE_PATH, 'ai_clipper.db')}"
 
 # Connect args specific to SQLite (not needed for Postgres)
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
@@ -40,5 +42,13 @@ def get_db():
 
 def init_db():
     """Create all tables. Called on app startup."""
-    from models.schemas import Job, Clip  # noqa: F401
+    from models.schemas import Job, Clip, LinkedAccount  # noqa: F401
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+    
+    # Try to add preferences column if it doesn't exist (schema migration)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE linked_accounts ADD COLUMN preferences JSON DEFAULT '{}'"))
+    except Exception as e:
+        pass  # Column likely already exists or table is not created yet

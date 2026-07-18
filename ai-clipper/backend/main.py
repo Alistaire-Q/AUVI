@@ -32,7 +32,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from database import init_db, STORAGE_PATH
-from routers import process, upload, clips
+from routers import process, upload, clips, youtube
 
 # Configure logging
 logging.basicConfig(
@@ -110,6 +110,7 @@ app.mount("/storage", StaticFiles(directory=STORAGE_PATH), name="storage")
 app.include_router(process.router)
 app.include_router(upload.router)
 app.include_router(clips.router)
+app.include_router(youtube.router)
 
 
 @app.get("/")
