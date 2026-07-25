@@ -208,11 +208,11 @@ def find_best_clips(
         return []
 
     total_duration = words[-1]["end"] if words else 0
-    max_clips = settings.get("max_clips", 5)
+    max_clips = 50 # Allow up to 50 clips instead of a small hard limit
 
     logger.info(
         f"Analyzing {len(words)} words with LLM, "
-        f"total_duration={total_duration:.1f}s, max_clips={max_clips}"
+        f"total_duration={total_duration:.1f}s"
     )
 
     # Build timestamped transcript (seconds-based)
@@ -224,83 +224,141 @@ def find_best_clips(
 
     # LLM config
     cfg = _get_llm_config()
-
-    user_prompt = (
-        f"Analisis transkrip podcast berikut dan temukan {max_clips} segmen terbaik "
-        f"yang SIAP VIRAL. Ikuti semua aturan yang sudah ditentukan.\n\n"
-        f"TRANSKRIP VIDEO (total durasi: {total_duration:.1f} detik):\n"
-        f"{transcript_text}"
-    )
-
-    try:
-        response = httpx.post(
-            f"{cfg['base_url']}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {cfg['api_key']}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": cfg["model"],
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.2,
-                "max_tokens": LLM_MAX_TOKENS,
-            },
-            timeout=HTTP_TIMEOUT,
+    
+    # ── Chunk transcript to avoid LLM output truncation ──
+    CHUNK_DURATION_SEC = 600.0  # 10 menit
+    chunks = []
+    current_chunk = []
+    
+    if words:
+        current_start = words[0]["start"]
+        for w in words:
+            if not current_chunk:
+                current_start = w["start"]
+            current_chunk.append(w)
+            if w["end"] - current_start >= CHUNK_DURATION_SEC and _is_sentence_end(w["word"]):
+                chunks.append(current_chunk)
+                current_chunk = []
+                # Next chunk's start will be determined by its first word
+                
+        if current_chunk:
+            chunks.append(current_chunk)
+            
+    logger.info(f"Split transcript into {len(chunks)} chunk(s) to process all information without truncation")
+    
+    clips_raw = []
+    
+    import time
+    
+    for idx, chunk_words in enumerate(chunks):
+        if not chunk_words: continue
+        
+        chunk_text = _build_transcript_text(chunk_words)
+        chunk_dur = chunk_words[-1]["end"] - chunk_words[0]["start"]
+        
+        user_prompt = (
+            f"Analisis transkrip podcast berikut dan ekstrak SEMUA segmen / informasi penting "
+            f"yang SIAP VIRAL (sebanyak informasi yang ada). Ikuti semua aturan yang sudah ditentukan. JANGAN MEMOTONG INFORMASI.\n\n"
+            f"TRANSKRIP VIDEO (Bagian {idx + 1}, durasi: {chunk_dur:.1f} detik):\n"
+            f"{chunk_text}"
         )
-
-        if response.status_code != 200:
-            logger.error(f"LLM API error {response.status_code}: {response.text}")
-            raise RuntimeError(f"LLM API error: {response.text}")
-
-        result = response.json()
-        llm_text = result["choices"][0]["message"]["content"].strip()
-        finish_reason = result.get("choices", [{}])[0].get("finish_reason", "")
-
-        logger.info(f"LLM raw response (first 500 chars): {llm_text[:500]}")
-
-        # Strip markdown code fences if present
-        if llm_text.startswith("```"):
-            llm_text = llm_text.split("\n", 1)[1]
-            llm_text = llm_text.rsplit("```", 1)[0]
-            llm_text = llm_text.strip()
-
-        parsed = _safe_json_load(llm_text)
-
-        # Handle both {"clips": [...]} and bare [...] formats
-        if isinstance(parsed, dict) and "clips" in parsed:
-            clips_raw = parsed["clips"]
-        elif isinstance(parsed, list):
-            clips_raw = parsed
-        else:
-            raise ValueError(f"Unexpected JSON structure: {type(parsed)}")
-
-        # Jika LLM terpotong di tengah output (finish_reason=length) dan tidak
-        # ada klip sama sekali yang berhasil di-parse, kita retry sekali dengan
-        # instruksi eksplisit. Jangan langsung fallback ke pembagian-rata yang
-        # memotong informasi.
-        if finish_reason == "length" and not clips_raw:
-            logger.warning(
-                "LLM output truncated (finish_reason=length) with no parsed clips. "
-                "Retrying with fewer clips requested."
+        
+        try:
+            response = httpx.post(
+                f"{cfg['base_url']}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {cfg['api_key']}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": cfg["model"],
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    "temperature": 0.2,
+                    "max_tokens": LLM_MAX_TOKENS,
+                },
+                timeout=HTTP_TIMEOUT,
             )
-            clips_raw = _retry_with_fewer_clips(cfg, transcript_text, total_duration, max(max_clips - 2, 2))
+            
+            import re
+            max_retries = 3
+            for attempt in range(max_retries):
+                if response.status_code != 429:
+                    break
+                    
+                try:
+                    err_data = response.json()
+                    msg = err_data.get("error", {}).get("message", "")
+                    match = re.search(r'try again in (?:(\d+)m)?(?:([\d.]+)s)?', msg)
+                    if match:
+                        m = int(match.group(1)) if match.group(1) else 0
+                        s = float(match.group(2)) if match.group(2) else 0
+                        wait_time = m * 60 + s + 2.0
+                    else:
+                        wait_time = 60.0
+                except Exception:
+                    wait_time = 60.0
+                    
+                logger.warning(f"Rate limit hit, sleeping for {wait_time:.1f}s (Attempt {attempt+1}/{max_retries})")
+                time.sleep(wait_time)
+                
+                response = httpx.post(
+                    f"{cfg['base_url']}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {cfg['api_key']}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": cfg["model"],
+                        "messages": [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "temperature": 0.2,
+                        "max_tokens": LLM_MAX_TOKENS,
+                    },
+                    timeout=HTTP_TIMEOUT,
+                )
+                
+            if response.status_code != 200:
+                logger.error(f"LLM API error on chunk {idx+1}: {response.text}")
+                continue
+                
+            result = response.json()
+            llm_text = result["choices"][0]["message"]["content"].strip()
+            
+            if llm_text.startswith("```"):
+                llm_text = llm_text.split("\n", 1)[1]
+                llm_text = llm_text.rsplit("```", 1)[0].strip()
+                
+            parsed = _safe_json_load(llm_text)
+            
+            chunk_clips = []
+            if isinstance(parsed, dict):
+                val = parsed.get("clips")
+                if isinstance(val, list):
+                    chunk_clips = val
+                elif isinstance(val, dict):
+                    chunk_clips = [val]
+            elif isinstance(parsed, list):
+                chunk_clips = parsed
+                
+            clips_raw.extend(chunk_clips)
+            logger.info(f"Chunk {idx+1} yielded {len(chunk_clips)} clips")
+            
+        except Exception as e:
+            logger.error(f"LLM analysis failed on chunk {idx+1}: {e}")
+            continue
 
-        logger.info(f"LLM returned {len(clips_raw)} clips")
-
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse LLM JSON: {e}")
-        logger.error(f"LLM raw: {llm_text}")
-        return _fallback_find_clips(words, total_duration, max_clips)
-    except Exception as e:
-        logger.error(f"LLM analysis failed: {e}")
-        return _fallback_find_clips(words, total_duration, max_clips)
+    if not clips_raw:
+        logger.error("No clips extracted from LLM analysis. Aborting instead of using poor-quality fallback.")
+        raise RuntimeError("AI Groq tidak mengembalikan data klip (kemungkinan kuota token harian habis atau koneksi terikat limit).")
 
     # ── Convert LLM output to internal clip format ──
     result_clips = []
-    for i, raw in enumerate(clips_raw[:max_clips]):
+    for i, raw in enumerate(clips_raw):
         try:
             # Accept both float seconds and "MM:SS" string
             start = _to_seconds(raw.get("start_time", raw.get("start", 0)))

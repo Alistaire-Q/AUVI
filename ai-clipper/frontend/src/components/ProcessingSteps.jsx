@@ -2,16 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CloudDownload, AudioWaveform, Brain, Scissors, Captions, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 
-const STEPS = [
-  { id: 1, label: 'Fetching source', icon: CloudDownload, detail: 'Connecting to the link and pulling the highest-quality stream.' },
-  { id: 2, label: 'Transcribing', icon: AudioWaveform, detail: 'Whisper-grade ASR with word-level timestamps.' },
-  { id: 3, label: 'Analyzing', icon: Brain, detail: 'Detecting hooks, payoffs, emotion spikes and pattern interrupts.' },
-  { id: 4, label: 'Generating clips', icon: Scissors, detail: 'Rendering ready-to-post clips with titles and scores.' },
-];
+export default function ProcessingSteps({ currentStep, progress, message, status, error, language }) {
+  const translateMessage = (msg) => {
+    if (!msg || language !== 'id') return msg;
+    if (msg === 'Downloading video from YouTube...') return 'Mengunduh video dari YouTube...';
+    if (msg === 'File uploaded successfully') return 'File berhasil diunggah';
+    if (msg.startsWith('Downloading...')) return msg.replace('Downloading...', 'Mengunduh...');
+    if (msg === 'Extracting audio...') return 'Mengekstrak audio...';
+    if (msg === 'Transcribing with Groq Whisper API...') return 'Mentranskripsi dengan Groq Whisper API...';
+    if (msg === 'Transcription complete') return 'Transkripsi selesai';
+    if (msg === 'Analyzing content for viral moments...') return 'Menganalisis konten untuk momen viral...';
+    if (msg.startsWith('Found ') && msg.includes(' clip candidates')) return msg.replace('Found ', 'Ditemukan ').replace(' clip candidates', ' kandidat klip');
+    if (msg === 'Generating clips...') return 'Membuat klip...';
+    if (msg.startsWith('Generated clip ')) return msg.replace('Generated clip ', 'Memproses klip ');
+    if (msg === 'All clips generated successfully!') return 'Semua klip berhasil dibuat!';
+    return msg;
+  };
 
-const STEP_ICONS = [CloudDownload, AudioWaveform, Brain, Scissors, Captions, Sparkles];
-
-export default function ProcessingSteps({ currentStep, progress, message, status, error }) {
+  const STEPS = [
+    { id: 1, label: language === 'id' ? 'Mengambil sumber' : 'Fetching source', icon: CloudDownload, detail: language === 'id' ? 'Menghubungkan ke tautan dan menarik kualitas stream terbaik.' : 'Connecting to the link and pulling the highest-quality stream.' },
+    { id: 2, label: language === 'id' ? 'Mentranskripsi' : 'Transcribing', icon: AudioWaveform, detail: language === 'id' ? 'ASR level Whisper dengan stempel waktu per kata.' : 'Whisper-grade ASR with word-level timestamps.' },
+    { id: 3, label: language === 'id' ? 'Menganalisis' : 'Analyzing', icon: Brain, detail: language === 'id' ? 'Mendeteksi hook, klimaks, emosi, dan interupsi pola.' : 'Detecting hooks, payoffs, emotion spikes and pattern interrupts.' },
+    { id: 4, label: language === 'id' ? 'Membuat klip' : 'Generating clips', icon: Scissors, detail: language === 'id' ? 'Memproses klip siap tayang dengan judul dan skor.' : 'Rendering ready-to-post clips with titles and scores.' },
+  ];
   // Lightweight animated waveform + score bars for the live preview panel
   const [waveform, setWaveform] = useState(() =>
     Array.from({ length: 48 }, () => 0.2 + Math.random() * 0.8),
@@ -47,17 +60,17 @@ export default function ProcessingSteps({ currentStep, progress, message, status
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-          {status === 'failed' ? 'Processing failed' : status === 'completed' ? 'All done!' : 'AUVI is working its magic'}
+          {status === 'failed' ? (language === 'id' ? 'Pemrosesan gagal' : 'Processing failed') : status === 'completed' ? (language === 'id' ? 'Semua selesai!' : 'All done!') : (language === 'id' ? 'AUVI sedang bekerja' : 'AUVI is working its magic')}
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-text-muted">
-          {message || (status === 'failed' ? 'Something went wrong.' : 'Analyzing your video…')}
+          {translateMessage(message) || (status === 'failed' ? (language === 'id' ? 'Terjadi kesalahan.' : 'Something went wrong.') : (language === 'id' ? 'Menganalisis video Anda...' : 'Analyzing your video…'))}
         </p>
       </div>
 
       {/* Overall progress */}
       <div className="mx-auto max-w-md">
         <div className="flex items-center justify-between text-xs text-text-muted mb-1.5">
-          <span>Progress</span>
+          <span>{language === 'id' ? 'Progres' : 'Progress'}</span>
           <span className="font-mono font-semibold text-accent-1">{progress}%</span>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-border">
@@ -131,7 +144,7 @@ export default function ProcessingSteps({ currentStep, progress, message, status
               <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-danger/15 text-danger">
                 <AlertCircle className="w-4 h-4" />
               </div>
-              <p className="text-xs text-text-muted">{error || 'An unexpected error occurred during processing.'}</p>
+              <p className="text-xs text-text-muted">{error || (language === 'id' ? 'Terjadi kesalahan tak terduga selama pemrosesan.' : 'An unexpected error occurred during processing.')}</p>
             </div>
           )}
         </div>
@@ -146,7 +159,7 @@ export default function ProcessingSteps({ currentStep, progress, message, status
         >
           <div className="mb-3 flex items-center gap-2 text-xs font-medium text-text-muted">
             <Brain className="w-3.5 h-3.5 text-accent-1" />
-            {status === 'completed' ? 'Composing your clips' : 'Live analysis'}
+            {status === 'completed' ? (language === 'id' ? 'Menyusun klip Anda' : 'Composing your clips') : (language === 'id' ? 'Analisis langsung' : 'Live analysis')}
             {active && (
               <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-accent-1">
                 <span className="size-1.5 animate-pulse rounded-full bg-accent-1" />
@@ -164,11 +177,11 @@ export default function ProcessingSteps({ currentStep, progress, message, status
               >
                 <CheckCircle className="w-6 h-6" />
               </motion.div>
-              <p className="mt-3 text-sm font-medium">Clips ready to ship</p>
-              <p className="mt-1 text-xs text-text-muted">Routing you to your dashboard…</p>
+              <p className="mt-3 text-sm font-medium">{language === 'id' ? 'Klip siap tayang' : 'Clips ready to ship'}</p>
+              <p className="mt-1 text-xs text-text-muted">{language === 'id' ? 'Mengarahkan ke dasbor...' : 'Routing you to your dashboard…'}</p>
             </div>
           ) : status === 'failed' ? (
-            <p className="py-6 text-center text-xs text-text-muted">Analysis interrupted.</p>
+            <p className="py-6 text-center text-xs text-text-muted">{language === 'id' ? 'Analisis terhenti.' : 'Analysis interrupted.'}</p>
           ) : (
             <>
               {/* Waveform */}
@@ -185,7 +198,7 @@ export default function ProcessingSteps({ currentStep, progress, message, status
               <div className="mt-4 space-y-2">
                 {scoreBars.map((score, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-16 shrink-0 text-[11px] text-text-muted">Clip {i + 1}</span>
+                    <span className="w-16 shrink-0 text-[11px] text-text-muted">{language === 'id' ? 'Klip' : 'Clip'} {i + 1}</span>
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
                       <motion.div
                         className="h-full bg-slate-900"

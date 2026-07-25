@@ -70,81 +70,135 @@ Semua proses AI menggunakan **Groq API** yang **100% GRATIS**.
 
 ## Arsitektur & Struktur Proyek
 
+AUVI dibangun menggunakan arsitektur modular modern berbasis mikro-layanan internal (*internal micro-pipeline*) yang mendisahkan beban kerja I/O intensif (unduh video & transmisi API) dari beban kerja komputasional murni (pemrosesan audio/video FFmpeg & parsing AI).
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       AUVI ARCHITECTURE                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+  [ Frontend Web Client ] ◄─── REST API / SSE Real-time Progress ───► [ FastAPI Application Server ]
+           │                                                                     │
+           ▼                                                                     ▼
+  [ Supabase PostgreSQL ] ◄─── Sync Metadata & Accounts ─────────────► [ Upstash Redis Cloud Queue ]
+                                                                                 │
+                                                                                 ▼
+                                                                      [ ARQ Background Worker ]
+                                                                                 │
+                ┌────────────────────────────────────────────────────────────────┴───────┐
+                ▼                                                                        ▼
+  [ Groq Cloud AI Engine ]                                                  [ Local Media Pipeline ]
+  ├─ Whisper Large-v3 (Word Timestamps)                                     ├─ yt-dlp (YouTube Extraction)
+  └─ Llama 3.3 70B Versatile (Viral Clip NLP Analysis)                     └─ FFmpeg (Clip & Burn Subtitles)
+```
+
+---
+
+### 🏛️ 1. Arsitektur Pemrosesan Asinkron (Background Task Queue)
+
+Pemrosesan video berdurasi panjang membutuhkan manajemen memori dan ketahanan sistem yang kuat agar tidak membebani server utama atau memicu HTTP Timeout:
+
+- **Decoupling dengan ARQ & Upstash Redis:** Request analisis video yang masuk melalui antarmuka FastAPI tidak langsung diolah di *thread* HTTP utama. Job mendaftarkan diri ke antrean in-memory berkecepatan tinggi **Upstash Redis (SSL)** dan dieksekusi oleh **ARQ Worker Asinkron** di belakang layar.
+- **Rate-Limit Resilience & Fault Tolerance:** Worker dilengkapi proteksi batas waktu per-job hingga **1 jam (`job_timeout = 3600`)** dan logika mekanisme *retry* eksponensial. Apabila kuota token per menit (TPM) dari API eksternal (Groq) menyentuh limit sementara, worker menunda proses (*smart sleep*) secara mandiri dan melaju kembali begitu jatah token diperbarui oleh jaringan terluar, tanpa pernah menggagalkan eksekusi utama Anda di tengah jalan.
+- **Real-Time SSE Tracking:** Server menyiarkan update status per milidetik menggunakan protokol *Server-Sent Events (SSE)* ke frontend React. Pengguna dapat melacak alur proses *(Downloading ➔ Transcribing ➔ Analyzing ➔ Clipping ➔ Ready)* secara transparan.
+
+---
+
+### 🧠 2. Arsitektur AI & NLP (Smart Chunking & Pure-AI Guarantee)
+
+Intelek utama dari AUVI tersimpen pada rancangan *Prompt Engineering* berderajat tinggi dan teknik pemangsaan teks (*chunking*) bermutu tinggi:
+
+- **Senior Video Editor Prompting (Llama 3.3 70B):** LLM bertindak sebagai otoritas pengambil keputusan tunggal (*sole decision-maker*). Model diberikan instruksi editor profesional untuk mencari *viral hooks*, membedahi materi video panjang beraturan menjadi beberapa sub-topik independen berdaya jual tinggi (30–180 detik) dengan skor potensi vitalitas dari 1 hingga 100.
+- **Sentence-Aware Smart Chunking (Hemat Token hingga 97%):** Untuk menangani video sangat panjang tanpa risiko halusinasi atau terpotongnya output JSON, transkrip dibagi ke dalam blok-blok waktu seimbang per 10 menit (600 detik) yang **dilarang memotong di tengah kalimat**. Jam waktu sistem diriset dengan ketat per setiap blok sehingga video berdurasi 35+ menit cukup menggunakan 4 panggilan jaringan (hanya ~4.000 token dari kuota harian), sangat hemat dan cepat.
+- **Pure-AI Quality Guarantee (Zero Dummy Fallback):** Sistem AUVI berkomitmen terhadap kemurnian analisis AI. Apabila jaringan API terputus atau limit kuota harian token pengguna benar-benar habis total, sistem menolam keras membuat klip dummy berbasis hitungan kata kasar di bawah tangan, melainkan langsung mengabarkan pesan eror secara terbuka agar integritas dan keluwesan alur konten presentasi Anda tetap terjaga tanpa klip cacat.
+
+---
+
+### 🔍 3. Arsitektur Validator Semantik & Linguistik Pasca-LLM
+
+Sering kali AI mengembalikan *timestamp* detik yang melesat sedikit dari ucapan asli. Untuk mengatasinya, AUVI mengintegrasikan sistem pasca-validasi lingual khusus (`semantic_validator.py`):
+
+- **Millisecond Word-Snap:** Menyempurnakan presisi detik dari LLM dengan menarik waktu mulai (*start_time*) dan waktu akhir (*end_time*) langsung ke batas kata dan tanda baca mutlak (`.`, `!`, `?`) berkat integrasi pengidentifikasi waktu tingkat kata (*word-level timestamp*) dari *Groq Whisper API*.
+- **List & Question Completion Extension:** Mengandung kecerdasan linguistik dwibahasa (**Bahasa Indonesia & English**). Apabila AI memotong klip sesaat sebelum suatu daftar belum genap terabaikan (*"Ada 3 rahasia..."*) atau sesaat setelah pertanyaan pancingan belum terjawab utuh (*"Mengapa bisa rugi? Karena..."*), engine validator otomatis memperlebar durasi klip hingga penjelasan penutupnya tuntas dicamkan.
+- **Dangling Connector Elimination & Overlap Deduplication:** Menyingkirkan risiko video terpotong pada kata sambung menggantung (*"karena...", "dan...", "walaupun..."*). Serta mergerisasi (gabungan de-duplikasi) apabila model menghasilkan dua klip dengan ketindihan topik melebihi 50% (*overlap limit*).
+
+---
+
+### 🌐 4. Arsitektur Database Cloud & Otomasi Publikasi
+
+- **Supabase PostgreSQL Persistent Layer:** Metadata alur eksekusi, riwayat performa klip, skor viral, serta data akun pengguna diorganisir menggunakan standar basis data transaksional tangguh bersandar di Cloud PostgreSQL (Supabase).
+- **One-Click YouTube Shorts Automation:** Integrasi bawaan kredensial autentikasi **Google OAuth 2.0 API** mengizinkan setiap klip berakurasi tinggi yang telah dienkapsulasi subtitle TikTok bergaya huruf terang (*burned-in keywords & dynamic colors*) untuk diluncurkan secara otomatis maupun terjadwal langsung ke panggung *YouTube Shorts* milik kreator dari dasbor kendali.
+
+---
+
+### 🗂️ Struktur Direktori Proyek
+
 ```
 AUVI/
-├── README.md                   ← 📄 File ini (panduan lengkap)
+├── README.md                   ← 📄 File ini (panduan & arsitektur lengkap)
 ├── LICENSE                     ← 📜 Lisensi MIT
 ├── package.json                ← 📦 Script shortcut (npm run dev, dll)
 │
 └── ai-clipper/                 ← 🗂️ Folder utama aplikasi
-    ├── .env                    ← 🔑 API Key (JANGAN di-commit ke Git!)
-    ├── dev.py                  ← 🚀 Script untuk jalankan backend + frontend sekaligus
-    ├── docker-compose.yml      ← 🐳 Orchestrator Docker
-    ├── storage/                ← 💾 Folder penyimpanan video & klip hasil
+    ├── .env                    ← 🔑 Konfigurasi Rahasia & API Key
+    ├── dev.py                  ← 🚀 Script terintegrasi pencucuk backend + frontend 
+    ├── docker-compose.yml      ← 🐳 Orchestrator Docker Container & Networking
+    ├── storage/                ← 💾 Penyimpanan isolasi berkas media asli & klip hasil
     │
     ├── backend/                ← ⚙️ Server Backend (Python/FastAPI)
-    │   ├── Dockerfile          ← Build instructions untuk container
-    │   ├── main.py             ← Entry point — inisialisasi FastAPI app
-    │   ├── database.py         ← SQLite database wrapper
-    │   ├── requirements.txt    ← Daftar dependensi Python
+    │   ├── Dockerfile          ← Instruksi Kontainerisasi Service Backend
+    │   ├── main.py             ← Entry point — Inisialisasi Middleware FastAPI & CORS
+    │   ├── database.py         ← Engine konektor ORM PostgreSQL (Supabase / SQLite fallback)
+    │   ├── worker.py           ← ARQ Asynchronous Worker & Pipeline Pengolahan Antrean
+    │   ├── redis_client.py     ← Pengelola Koneksi & Manajemen Resiliency Upstash Redis
+    │   ├── requirements.txt    ← Dependensi Pustaka Python
     │   ├── models/
     │   │   ├── __init__.py
-    │   │   └── schemas.py      ← Pydantic models (validasi data)
+    │   │   └── schemas.py      ← Pydantic & SQLAlchemy ORM Models (Validasi Skema Data)
     │   ├── routers/
     │   │   ├── __init__.py
-    │   │   ├── process.py      ← Pipeline utama: download → transkripsi → analisis → potong
-    │   │   ├── upload.py       ← Endpoint upload file video
-    │   │   └── clips.py        ← Endpoint akses & download klip hasil
+    │   │   ├── process.py      ← Router API Proses Pipeline Job (Enqueue to ARQ Worker)
+    │   │   ├── upload.py       ← Router API Manajemen Unggahan Media Langsung
+    │   │   └── clips.py        ← Router API Ekstraksi Hasil, Streaming, & Otomasi Shorts
     │   └── services/
     │       ├── __init__.py
-    │       ├── downloader.py       ← Download YouTube via yt-dlp
-    │       ├── transcriber.py      ← Transkripsi audio via Groq Whisper API
-    │       ├── analyzer.py         ← Analisis konten via LLM (Llama 3.3 70B)
-    │       ├── clipper.py          ← Potong video via FFmpeg + face tracking
-    │       ├── clip_validator.py   ← Validasi durasi & format klip
-    │       └── semantic_validator.py ← Validasi kelengkapan narasi klip
+    │       ├── downloader.py       ← Ekstraktor Video & Audio Resolusi Tinggi via yt-dlp
+    │       ├── transcriber.py      ← Transkriptor Presisi Tinggi via Groq Whisper API (Word Level)
+    │       ├── analyzer.py         ← Senior Editor AI & Smart Chunking via Groq Llama 3.3 70B
+    │       ├── clipper.py          ← Komandan FFmpeg, Vertikal Crop 9:16 & Subtitle Burning
+    │       ├── clip_validator.py   ← Validator Karakteristik Fisik & Format Berkas Video
+    │       ├── semantic_validator.py ← Linguistic Engine (Pengecekan Narasi Utuh Dwibahasa)
+    │       └── youtube_api.py      ← Pengontrol Autentikasi Google OAuth 2.0 & Publishing
     │
     └── frontend/               ← 🎨 Antarmuka Pengguna (React/Vite)
-        ├── Dockerfile          ← Build instructions untuk container
-        ├── package.json        ← Daftar dependensi Node.js
-        ├── vite.config.js      ← Konfigurasi Vite (proxy, port)
-        ├── tailwind.config.js  ← Konfigurasi TailwindCSS
-        ├── postcss.config.js   ← Konfigurasi PostCSS
-        ├── index.html          ← HTML entry point
+        ├── Dockerfile          ← Instruksi Kontainerisasi Web Frontend
+        ├── package.json        ← Dependensi & Ekosistem Pustaka Node.js
+        ├── vite.config.js      ← Konfigurasi Dev Server & Middleware Proxy
+        ├── tailwind.config.js  ← Desain Token & Tema Kustom TailwindCSS
+        ├── index.html          ← Halaman Kerangka Tumpuan Utama HTML
         └── src/
-            ├── main.jsx        ← React entry point
-            ├── App.jsx         ← Router utama (React Router)
-            ├── index.css       ← Global stylesheet
+            ├── main.jsx        ← Inisialisator React & Virtual DOM Renderer
+            ├── App.jsx         ← Kontraktor Navigasi & Client-Side Routing
+            ├── index.css       ← Global Styling & Token Kosmetika Desain
             ├── pages/
-            │   ├── Home.jsx        ← Halaman utama (input URL / upload)
-            │   ├── Processing.jsx  ← Halaman progress pemrosesan
-            │   └── Dashboard.jsx   ← Halaman hasil (daftar klip)
+            │   ├── Home.jsx        ← Landing Page & Portal Masukkan URL / Upload Media
+            │   ├── Processing.jsx  ← Terminal Pemantauan Progress Live-Stream (SSE)
+            │   └── Dashboard.jsx   ← Pameran Hasil Analisis Klip & Publikasi
             ├── components/
-            │   ├── UploadZone.jsx       ← Drag-and-drop area upload
-            │   ├── YouTubeInput.jsx     ← Input field URL YouTube
-            │   ├── ProcessingSteps.jsx  ← Visualisasi step-by-step proses
-            │   ├── ClipCard.jsx         ← Kartu preview klip
-            │   ├── ClipPreviewModal.jsx ← Modal preview video klip
-            │   ├── ClipTimeline.jsx     ← Timeline visual klip
-            │   ├── VideoPlayer.jsx      ← Pemutar video custom
-            │   ├── CaptionOverlay.jsx   ← Overlay subtitle pada video
-            │   ├── SettingsDrawer.jsx   ← Panel pengaturan
-            │   └── Logo.jsx            ← Komponen logo AUVI
+            │   ├── UploadZone.jsx       ← Drop-Zone Unggahan Berkas Dinamis
+            │   ├── YouTubeInput.jsx     ← Validasi & Ekstraksi URL YouTube Web
+            │   ├── ProcessingSteps.jsx  ← Indikator Visual Animatif Tahapan AI
+            │   ├── ClipCard.jsx         ← Etalase Kartu Klip, Skor Viral, & Opsi YouTube
+            │   ├── ClipPreviewModal.jsx ← Pemutar Layar Penuh Pemutaran Hasil Potongan
+            │   ├── ClipTimeline.jsx     ← Navigator Rentang Waktu Visual dari Video Asli
+            │   ├── VideoPlayer.jsx      ← Pemutar Media Interaktif Bergaya Vertikal Modern
+            │   ├── CaptionOverlay.jsx   ← Simulator Animasi Subtitle TikTok Live
+            │   └── SettingsDrawer.jsx   ← Laci Pengontrol Bahasa & Ambang Batas Viral Skor
             ├── store/
-            │   └── useClipStore.js  ← State management (Zustand)
+            │   └── useClipStore.js  ← Manajemen State Global (Zustand Architecture)
             └── lib/
-                └── api.js           ← API client (Axios)
+                └── api.js           ← Engine Komunikasi API Asinkron & Interseptor
 ```
 
-### Alur Kerja Aplikasi (Pipeline)
-
-```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  1. INPUT    │───▶│  2. DOWNLOAD │───▶│ 3. TRANSKRIP │───▶│ 4. ANALISIS  │───▶│  5. POTONG   │
-│ YouTube URL  │    │  yt-dlp      │    │ Groq Whisper │    │ Llama 3.3    │    │ FFmpeg +     │
-│ atau Upload  │    │              │    │ word-level   │    │ pilih segmen │    │ face track   │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-```
 
 ---
 

@@ -16,5 +16,7 @@ def get_redis_settings():
         host=REDIS_HOST,
         port=REDIS_PORT,
         password=REDIS_PASSWORD,
-        ssl=REDIS_SSL
+        ssl=REDIS_SSL,
+        conn_timeout=15,
+        conn_retries=10
     )

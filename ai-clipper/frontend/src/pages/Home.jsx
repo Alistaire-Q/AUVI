@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Link2, Upload, PlaySquare, Video, ArrowRight, Sparkles } from 'lucide-react';
+import { Settings, Link2, Upload, PlaySquare, Video, ArrowRight, Sparkles, Youtube } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import SettingsDrawer from '../components/SettingsDrawer';
 import GenerateOptionsModal from '../components/GenerateOptionsModal';

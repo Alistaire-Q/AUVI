@@ -3,7 +3,7 @@ import { X, Download, Play, Pause, ExternalLink } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 import VideoPlayer from './VideoPlayer';
 export default function ClipPreviewModal() {
-  const { previewOpen, selectedClip, closePreview } = useClipStore();
+  const { previewOpen, selectedClip, closePreview, language } = useClipStore();
   const [currentTime, setCurrentTime] = useState(0);
   const playerRef = useRef(null);
 
@@ -49,28 +49,28 @@ export default function ClipPreviewModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Light Overlay backdrop-blur */}
       <div 
-        className="absolute inset-0 bg-white/80 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-base/80 backdrop-blur-sm animate-fade-in"
         onClick={closePreview}
       ></div>
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-5xl bg-white border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
+      <div className="relative w-full max-w-5xl bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col animate-slide-up max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-white">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 line-clamp-1">{selectedClip.title}</h2>
+            <h2 className="text-lg font-semibold text-text-primary line-clamp-1">{selectedClip.title}</h2>
             <div className="flex items-center gap-3 mt-1">
-              <span className="badge badge-accent">{selectedClip.category}</span>
+              <span className="badge badge-accent">{selectedClip.category === 'Key Point' && language === 'id' ? 'Poin Kunci' : selectedClip.category}</span>
               <span className="text-xs text-text-muted">
-                Original Timeline: {formatTime(selectedClip.start)} - {formatTime(selectedClip.end)}
+                {language === 'id' ? 'Garis Waktu Asli:' : 'Original Timeline:'} {formatTime(selectedClip.start)} - {formatTime(selectedClip.end)}
               </span>
             </div>
           </div>
 
           <button
             onClick={closePreview}
-            className="p-2 rounded-lg hover:bg-slate-100 text-text-muted hover:text-slate-900 transition-colors"
+            className="p-2 rounded-lg hover:bg-card-hover text-text-muted hover:text-text-primary transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -89,17 +89,17 @@ export default function ClipPreviewModal() {
               />
           ) : (
             <div className="text-center p-8">
-              <p className="text-slate-300 mb-2">Video preview not available</p>
-              <p className="text-sm text-slate-500">Missing clip file path</p>
+              <p className="text-text-muted mb-2">{language === 'id' ? 'Pratinjau video tidak tersedia' : 'Video preview not available'}</p>
+              <p className="text-sm text-text-hint">{language === 'id' ? 'Jalur file klip hilang' : 'Missing clip file path'}</p>
             </div>
           )}
         </div>
         
         {/* Footer Controls */}
-        <div className="p-4 bg-slate-50 border-t border-border flex items-center justify-between">
+        <div className="p-4 bg-surface border-t border-border flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex flex-col">
-              <span className="text-sm text-text-muted mb-1">Viral Score</span>
+              <span className="text-sm text-text-muted mb-1">{language === 'id' ? 'Skor Viral' : 'Viral Score'}</span>
               <div className="flex items-center gap-2">
                 <div className="w-32 h-2 bg-border rounded-full overflow-hidden border border-border">
                   <div
@@ -107,14 +107,14 @@ export default function ClipPreviewModal() {
                     style={{ width: `${selectedClip.score}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-bold text-slate-900">{selectedClip.score}%</span>
+                <span className="text-sm font-bold text-text-primary">{selectedClip.score}%</span>
               </div>
             </div>
 
             <div className="h-8 w-px bg-border mx-2"></div>
 
             <div className="flex flex-col">
-              <span className="text-sm text-text-muted mb-1">Duration</span>
+              <span className="text-sm text-text-muted mb-1">{language === 'id' ? 'Durasi' : 'Duration'}</span>
               <span className="text-sm font-bold text-text-primary">{selectedClip.duration.toFixed(1)}s</span>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function ClipPreviewModal() {
             className="btn-primary"
           >
             <Download className="w-4 h-4" />
-            <span>Download MP4</span>
+            <span>{language === 'id' ? 'Unduh MP4' : 'Download MP4'}</span>
           </button>
         </div>
         

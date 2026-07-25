@@ -9,7 +9,7 @@ import Logo from '../components/Logo';
 export default function Processing() {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const { processing, setProcessing, resetProcessing, addRecentProject } = useClipStore();
+  const { processing, setProcessing, resetProcessing, addRecentProject, language } = useClipStore();
   const [jobInfo, setJobInfo] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -78,7 +78,8 @@ export default function Processing() {
   }, [jobId, navigate, setProcessing, resetProcessing]);
 
   const handleCancel = async () => {
-    if (confirm('Are you sure you want to cancel processing? This cannot be undone.')) {
+    const confirmMessage = language === 'id' ? 'Apakah Anda yakin ingin membatalkan pemrosesan? Ini tidak dapat dibatalkan.' : 'Are you sure you want to cancel processing? This cannot be undone.';
+    if (confirm(confirmMessage)) {
       setCancelling(true);
       try {
         await deleteJob(jobId);
@@ -101,7 +102,7 @@ export default function Processing() {
             className="btn-secondary py-2 border-transparent hover:border-border"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">{language === 'id' ? 'Kembali' : 'Back'}</span>
           </button>
         </div>
 
@@ -112,7 +113,7 @@ export default function Processing() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-danger hover:bg-danger/10 transition-colors text-sm font-medium"
           >
             <Trash2 className="w-4 h-4" />
-            <span>{cancelling ? 'Cancelling...' : 'Cancel'}</span>
+            <span>{cancelling ? (language === 'id' ? 'Membatalkan...' : 'Cancelling...') : (language === 'id' ? 'Batal' : 'Cancel')}</span>
           </button>
         )}
       </header>
@@ -125,9 +126,9 @@ export default function Processing() {
               <AudioLines className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <p className="truncate text-xs font-medium text-text-primary">{jobInfo.title || 'Your video'}</p>
+              <p className="truncate text-xs font-medium text-text-primary">{jobInfo.title || (language === 'id' ? 'Video Anda' : 'Your video')}</p>
               <p className="truncate text-[11px] text-text-muted">
-                {jobInfo.source_type === 'youtube' ? 'YouTube' : 'Upload'} · job {jobId?.slice(0, 8)}
+                {jobInfo.source_type === 'youtube' ? 'YouTube' : (language === 'id' ? 'Unggah' : 'Upload')} · job {jobId?.slice(0, 8)}
               </p>
             </div>
             <div className="text-right">
@@ -142,7 +143,7 @@ export default function Processing() {
         <div className="relative z-10 mx-auto w-full max-w-xl px-4 mt-6">
           <div className="aspect-video bg-surface rounded-xl border border-border overflow-hidden relative shadow-2xl animate-pulse">
             <div className="absolute inset-0 flex items-center justify-center text-text-muted">
-              Downloading from YouTube...
+              {language === 'id' ? 'Mengunduh dari YouTube...' : 'Downloading from YouTube...'}
             </div>
           </div>
         </div>
@@ -156,6 +157,7 @@ export default function Processing() {
           message={processing.message}
           status={processing.status}
           error={processing.error}
+          language={language}
         />
       </main>
     </div>

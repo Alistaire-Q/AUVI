@@ -99,6 +99,11 @@ def download_youtube(
                 "Chrome/131.0.0.0 Safari/537.36"
             ),
         },
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android"]
+            }
+        },
         "retries": 10,
         "fragment_retries": 10,
     }

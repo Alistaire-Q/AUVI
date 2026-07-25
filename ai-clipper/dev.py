@@ -260,6 +260,30 @@ def start_backend(env: dict) -> subprocess.Popen:
     return proc
 
 
+def start_worker(env: dict) -> subprocess.Popen:
+    """Start ARQ worker."""
+    print(f"{GREEN}[WORKER]{RESET} Starting ARQ worker ...")
+
+    cmd = [
+        PYTHON_EXE, "-m", "arq",
+        "worker.WorkerSettings"
+    ]
+
+    proc = subprocess.Popen(
+        cmd,
+        cwd=BACKEND_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+    )
+    processes.append(proc)
+    return proc
+
+
 def start_frontend() -> subprocess.Popen:
     """Start Vite dev server."""
     print(f"{YELLOW}[FRONTEND]{RESET} Starting Vite on http://localhost:5173 ...")
@@ -352,6 +376,10 @@ def main():
     # ── Step 3: Start servers ──
     backend_proc = start_backend(env)
     frontend_proc = start_frontend()
+    
+    worker_proc = None
+    if "REDIS_HOST" in env:
+        worker_proc = start_worker(env)
 
     # Stream output di threads terpisah
     threads = [
@@ -360,6 +388,11 @@ def main():
         threading.Thread(target=stream_output, args=(frontend_proc, "[FRONTEND]", YELLOW), daemon=True),
         threading.Thread(target=stream_stderr, args=(frontend_proc, "[FRONTEND]", YELLOW), daemon=True),
     ]
+    
+    if worker_proc:
+        threads.append(threading.Thread(target=stream_output, args=(worker_proc, "[WORKER]  ", GREEN), daemon=True))
+        threads.append(threading.Thread(target=stream_stderr, args=(worker_proc, "[WORKER]  ", GREEN), daemon=True))
+
     for t in threads:
         t.start()
 
@@ -372,6 +405,9 @@ def main():
                 break
             if frontend_proc.poll() is not None:
                 print(f"\n{RED}[DEV]{RESET} Frontend process exited with code {frontend_proc.returncode}")
+                break
+            if worker_proc and worker_proc.poll() is not None:
+                print(f"\n{RED}[DEV]{RESET} Worker process exited with code {worker_proc.returncode}")
                 break
             time.sleep(1)
     except KeyboardInterrupt:
