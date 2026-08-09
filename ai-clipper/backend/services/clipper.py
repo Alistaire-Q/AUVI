@@ -23,6 +23,106 @@ logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────
+# Pre-compute Face Positions (batch, once per video)
+# ──────────────────────────────────────────────
+
+def precompute_face_positions(
+    video_path: str,
+    clips: list[dict],
+    frame_size: str = "9:16",
+) -> dict[int, Optional[float]]:
+    """
+    Detect face positions for ALL clips in a single batch.
+    Returns {clip_index: relative_x_or_None}.
+
+    This avoids running ffmpeg.probe + 3x frame extraction PER clip.
+    Instead we probe once and sample strategically.
+    """
+    if frame_size == "16:9":
+        # No crop needed for 16:9 — skip face detection entirely
+        logger.info("Frame size is 16:9 — skipping face detection for all clips.")
+        return {c.get("index", i): None for i, c in enumerate(clips)}
+
+    logger.info(f"Pre-computing face positions for {len(clips)} clips...")
+
+    # Probe video width ONCE
+    try:
+        probe = ffmpeg.probe(video_path)
+        video_stream = next(
+            (s for s in probe['streams'] if s['codec_type'] == 'video'), None
+        )
+        width = int(video_stream['width'])
+    except Exception as e:
+        logger.error(f"Failed to probe video width: {e}")
+        width = 1920  # Fallback for 1080p
+
+    cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    face_cascade = cv2.CascadeClassifier(cascade_path)
+
+    results: dict[int, Optional[float]] = {}
+
+    for clip in clips:
+        idx = clip.get("index", 0)
+        start = clip.get("start", 0)
+        end = clip.get("end", 0)
+        duration = end - start
+
+        # Check for presentation keywords — use center crop
+        clip_words = clip.get("words", [])
+        has_presentation = any(
+            any(kw in w.get("word", "").lower() for kw in PRESENTATION_KEYWORDS)
+            for w in clip_words
+        ) if clip_words else False
+
+        if has_presentation:
+            results[idx] = None  # Will use center crop
+            continue
+
+        # Sample 3 frames from the clip for face detection
+        num_samples = 3
+        step = max(0.5, duration / num_samples)
+        face_x_centers = []
+
+        for i in range(num_samples):
+            t = start + (i * step)
+            if t >= end:
+                break
+            try:
+                out, _ = (
+                    ffmpeg
+                    .input(video_path, ss=t)
+                    .output('pipe:', vframes=1, format='image2', vcodec='mjpeg')
+                    .run(capture_stdout=True, capture_stderr=True, quiet=True)
+                )
+                image_array = np.frombuffer(out, np.uint8)
+                frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+            except Exception:
+                continue
+
+            if frame is None:
+                continue
+
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(
+                gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
+            )
+
+            if len(faces) > 0:
+                largest_face = max(faces, key=lambda f: f[2] * f[3])
+                x, y, w_f, h_f = largest_face
+                face_x_centers.append(x + (w_f / 2))
+
+        if face_x_centers:
+            avg_x = sum(face_x_centers) / len(face_x_centers)
+            results[idx] = avg_x / width
+        else:
+            results[idx] = None
+
+    logger.info(f"Pre-computed face positions for {len(results)} clips.")
+    return results
+
+
+# ──────────────────────────────────────────────
 # Face Detection for Smart Crop
 # ──────────────────────────────────────────────
 
@@ -256,6 +356,7 @@ def generate_clip(
     output_path: str,
     words: Optional[list[dict]] = None,
     subtitle_settings: Optional[dict] = None,
+    precomputed_face_x: Optional[float] = "NOT_SET",
 ) -> str:
     """
     Cut video PRECISELY at LLM-determined timestamps.
@@ -306,54 +407,60 @@ def generate_clip(
             for w in words
         )
 
+    # Use precomputed face position if available, otherwise detect per-clip
+    if precomputed_face_x != "NOT_SET":
+        face_x = precomputed_face_x
+    else:
+        face_x = None  # Will detect below if needed
+
     if frame_size == "16:9":
-        # Usually no crop needed for 16:9 source, but we ensure iw:ih is used if cropped
-        if has_presentation:
-            crop_filter = "crop=iw:ih:0:0"
-        else:
-            face_x = _detect_primary_face_x(source_path, start, end)
-            crop_filter = "crop=iw:ih:0:0" # Fallback to original
+        # Usually no crop needed for 16:9 source
+        crop_filter = "crop=iw:ih:0:0"
     elif frame_size == "1:1":
         if has_presentation:
             crop_filter = "crop=ih:ih:iw/2-ih/2:0"
         else:
-            face_x = _detect_primary_face_x(source_path, start, end)
+            if face_x is None and precomputed_face_x == "NOT_SET":
+                face_x = _detect_primary_face_x(source_path, start, end)
             if face_x is not None:
                 crop_filter = f"crop=ih:ih:iw*{face_x}-ih/2:0"
             else:
                 crop_filter = "crop=ih:ih:iw/2-ih/2:0"
     else: # 9:16
         if has_presentation:
-            # Wider center crop to keep charts/whiteboard + speaker visible
             crop_filter = "crop=ih*9/16*1.1:ih:iw/2-(ih*9/16*1.1)/2:0"
             logger.info("Presentation detected → wide center crop")
         else:
-            face_x = _detect_primary_face_x(source_path, start, end)
+            if face_x is None and precomputed_face_x == "NOT_SET":
+                face_x = _detect_primary_face_x(source_path, start, end)
             if face_x is not None:
                 crop_filter = f"crop=ih*9/16:ih:iw*{face_x}-(ih*9/16)/2:0"
             else:
                 crop_filter = "crop=ih*9/16:ih:iw/2-ow/2:0"
 
-    # ── 3. Scale to target resolution ──
+    # ── 3. Scale to target resolution (with HD Lanczos Scaling) ──
     if frame_size == "16:9":
-        scale_filter = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"
+        scale_filter = "scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"
     elif frame_size == "1:1":
-        scale_filter = "scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2"
+        scale_filter = "scale=1080:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1080:1080:(ow-iw)/2:(oh-ih)/2"
     else: # 9:16
-        scale_filter = "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2"
+        scale_filter = "scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos,pad=1080:1920:(ow-iw)/2:(oh-ih)/2"
+
+    # Tambahan filter penajaman (sharpening) untuk mengembalikan detail HD setelah di-crop
+    sharpen_filter = "unsharp=5:5:1.0:5:5:0.0"
 
     # ── 4. Build subtitle filter ──
     if srt_path and srt_ffmpeg_path and subtitle_enabled:
         sub_filter = f"subtitles='{srt_ffmpeg_path}'"
-        video_filter = f"{crop_filter},{scale_filter},{sub_filter}"
+        video_filter = f"{crop_filter},{scale_filter},{sharpen_filter},{sub_filter}"
     else:
-        # No subtitles — just crop + scale
-        video_filter = f"{crop_filter},{scale_filter}"
+        # No subtitles — just crop + scale + sharpen
+        video_filter = f"{crop_filter},{scale_filter},{sharpen_filter}"
 
     # ── 5. Execute FFmpeg — cut EXACTLY at LLM timestamps ──
-    # Optimasi kecepatan:
-    # - preset=ultrafast → 2-3x lebih cepat dari "fast"
-    # - crf=28 → file lebih kecil, kualitas masih cukup untuk media sosial
+    # Optimasi kecepatan + kualitas:
+    # - preset=fast → keseimbangan antara kecepatan dan kualitas
+    # - crf=23 → kualitas visual jauh lebih baik (visually lossless)
     # - threads=0 → gunakan semua CPU core yang tersedia
     try:
         stream = ffmpeg.input(source_path, ss=start, t=end-start)
@@ -362,8 +469,8 @@ def generate_clip(
             vf=video_filter,
             vcodec="libx264",
             acodec="aac",
-            preset="ultrafast",
-            crf=28,
+            preset="fast",
+            crf=18, # Diturunkan dari 23 ke 18 (Visually Lossless HD)
             movflags="faststart",
             threads=0,
         )
@@ -382,8 +489,8 @@ def generate_clip(
                     vf=f"{crop_filter},{scale_filter}",
                     vcodec="libx264",
                     acodec="aac",
-                    preset="ultrafast",
-                    crf=28,
+                    preset="fast",
+                    crf=18,
                     threads=0,
                 )
                 ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)

@@ -74,7 +74,7 @@ def download_youtube(
 
     ydl_opts = {
         "format": (
-            "bestvideo[height<=720]+bestaudio/"
+            "bestvideo[height<=1080]+bestaudio/"
             "bestvideo+bestaudio/"
             "best"
         ),
@@ -117,7 +117,7 @@ def download_youtube(
         logger.error(f"Download failed: {e}")
         # Coba fallback: download single stream (lebih stabil di Windows)
         logger.warning("Retrying with single-stream format (fallback)...")
-        ydl_opts["format"] = "best[height<=720]/best"
+        ydl_opts["format"] = "best[height<=1080]/best"
         if "merge_output_format" in ydl_opts:
             del ydl_opts["merge_output_format"]
         try:

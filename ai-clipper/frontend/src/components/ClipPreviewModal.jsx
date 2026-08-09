@@ -85,6 +85,7 @@ export default function ClipPreviewModal() {
                 src={selectedClip.stream_url || selectedClip.download_url} 
                 poster={selectedClip.thumbnail_url}
                 onTimeUpdate={handleTimeUpdate}
+                defaultDuration={selectedClip.duration || 0}
                 autoPlay={true}
               />
           ) : (

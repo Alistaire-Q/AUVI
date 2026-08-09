@@ -96,26 +96,25 @@ def _build_transcript_text(words: list[dict]) -> str:
 
 # Durasi ideal per clip (detik). Clip yang melebihi ini akan
 # dipecah otomatis di post-processing agar cocok untuk media sosial.
-TARGET_CLIP_MIN = 30      # minimum 30 detik
-TARGET_CLIP_MAX = 180     # maksimum 3 menit
-SPLIT_THRESHOLD = 240     # clip > 4 menit WAJIB dipecah
+TARGET_CLIP_MIN = 25      # minimum 25 detik
+TARGET_CLIP_MAX = 75      # maksimum 75 detik
+SPLIT_THRESHOLD = 90      # clip > 90 detik WAJIB dipecah
 
 SYSTEM_PROMPT = """\
 Anda adalah Editor Video Senior yang bertugas memotong video panjang menjadi BEBERAPA klip pendek terpisah yang siap viral di media sosial (TikTok, Reels, Shorts).
 
 ═══════════════════════════════════════
-ATURAN PALING PENTING: ANDA HARUS MENGHASILKAN BEBERAPA KLIP
+ATURAN PALING PENTING: KUALITAS TINGGI & DURASI SINGKAT
 ═══════════════════════════════════════
 
-• Video input adalah video PANJANG (bisa 5-60 menit).
-• Tugas Anda adalah MEMECAH video ini menjadi BEBERAPA klip PENDEK yang BERBEDA topik/sub-topiknya.
-• SETIAP KLIP harus berdurasi ideal 30 detik sampai 3 menit.
+• Tugas Anda adalah MEMILIH 3 hingga 5 MOMEN PALING VIRAL, MENARIK, DAN BERBOBOT dari transkrip video. JANGAN memilih percakapan biasa atau basa-basi.
+• SETIAP KLIP wajib berdurasi ideal 25 detik sampai maksimal 75 detik (JANGAN PERNAH membuat klip lebih dari 90 detik!).
+• DILARANG OVERLAP (TUMPANG TINDIH): Klip-klip yang Anda pilih harus memiliki rentang waktu yang sepenuhnya berbeda satu sama lain.
 • JANGAN PERNAH mengembalikan HANYA 1 KLIP yang mencakup seluruh video — itu bukan clipping, itu copy.
-• Jika video membahas 1 tema besar (misal: "Cara Investasi"), PECAH menjadi sub-topik:
-    - Klip 1: "Apa itu investasi dan kenapa penting" (30s-2min)
-    - Klip 2: "3 jenis investasi untuk pemula" (1-3min)
-    - Klip 3: "Kesalahan fatal yang sering dilakukan" (1-2min)
-    - Klip 4: "Langkah pertama memulai investasi" (1-2min)
+• Jika video membahas 1 tema besar (misal: "Cara Investasi"), PECAH menjadi sub-topik menarik:
+    - Klip 1: "Apa itu investasi dan kenapa penting" (30s-60s)
+    - Klip 2: "3 jenis investasi untuk pemula" (30s-60s)
+    - Klip 3: "Kesalahan fatal yang sering dilakukan" (30s-60s)
 • Setiap klip harus bisa BERDIRI SENDIRI — penonton yang hanya melihat 1 klip harus bisa memahami isinya tanpa konteks video lain.
 
 ═══════════════════════════════════════

@@ -187,6 +187,7 @@ export default function Dashboard() {
               <VideoPlayer
                 ref={playerRef}
                 src={originalVideoUrl}
+                defaultDuration={jobInfo?.duration || 0}
                 onTimeUpdate={setCurrentTime}
               />
             </div>

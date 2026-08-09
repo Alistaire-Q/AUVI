@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
 
-const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, children }, ref) => {
+const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, defaultDuration = 0, children }, ref) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const isSeeking = useRef(false);
@@ -10,8 +10,14 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(defaultDuration || 0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (defaultDuration > 0 && (!duration || duration === 0 || isNaN(duration) || duration === Infinity)) {
+      setDuration(defaultDuration);
+    }
+  }, [defaultDuration]);
 
   useImperativeHandle(ref, () => ({
     seekTo: (time) => {
@@ -21,7 +27,7 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
       }
     },
     getCurrentTime: () => videoRef.current?.currentTime || 0,
-    getDuration: () => videoRef.current?.duration || 0,
+    getDuration: () => videoRef.current?.duration || duration || defaultDuration || 0,
     play: () => videoRef.current?.play(),
     pause: () => videoRef.current?.pause(),
   }));
@@ -30,18 +36,29 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
     const video = videoRef.current;
     if (!video) return;
 
+    const updateDuration = () => {
+      if (video.duration && !isNaN(video.duration) && video.duration !== Infinity) {
+        setDuration(video.duration);
+      } else if (defaultDuration > 0 && (!duration || duration === 0)) {
+        setDuration(defaultDuration);
+      }
+    };
+
+    updateDuration();
+
     const handleTimeUpdate = () => {
-      // Don't update state from video events while user is dragging the slider
       if (isSeeking.current) return;
       setCurrentTime(video.currentTime);
       if (onTimeUpdate) onTimeUpdate(video.currentTime);
+      if (!duration || duration === 0 || isNaN(duration) || duration === Infinity) {
+        updateDuration();
+      }
     };
 
-    const handleDurationChange = () => setDuration(video.duration);
+    const handleDurationChange = () => updateDuration();
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     
-    // When video finishes seeking to the new position, sync state
     const handleSeeked = () => {
       if (!isSeeking.current) {
         setCurrentTime(video.currentTime);
@@ -51,6 +68,9 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('durationchange', handleDurationChange);
+    video.addEventListener('loadedmetadata', updateDuration);
+    video.addEventListener('loadeddata', updateDuration);
+    video.addEventListener('canplay', updateDuration);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('seeked', handleSeeked);
@@ -58,11 +78,14 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('durationchange', handleDurationChange);
+      video.removeEventListener('loadedmetadata', updateDuration);
+      video.removeEventListener('loadeddata', updateDuration);
+      video.removeEventListener('canplay', updateDuration);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('seeked', handleSeeked);
     };
-  }, [onTimeUpdate]);
+  }, [onTimeUpdate, defaultDuration, duration]);
 
   useEffect(() => {
     if (autoPlay && videoRef.current) {
@@ -141,7 +164,7 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
   }, []);
 
   const formatTime = (timeInSeconds) => {
-    if (isNaN(timeInSeconds)) return '0:00';
+    if (!timeInSeconds || isNaN(timeInSeconds) || timeInSeconds === Infinity) return '0:00';
     const m = Math.floor(timeInSeconds / 60);
     const s = Math.floor(timeInSeconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -169,7 +192,7 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
           <input
             type="range"
             min={0}
-            max={duration || 100}
+            max={duration || defaultDuration || 100}
             value={currentTime}
             onMouseDown={handleSeekStart}
             onTouchStart={handleSeekStart}
@@ -202,7 +225,7 @@ const VideoPlayer = forwardRef(({ src, poster, onTimeUpdate, autoPlay = false, c
             </div>
             
             <span className="text-white text-xs font-medium">
-              {formatTime(currentTime)} / {formatTime(duration)}
+              {formatTime(currentTime)} / {formatTime(duration || defaultDuration || 0)}
             </span>
           </div>
           

@@ -378,41 +378,36 @@ def _deduplicate_clips(
 
         overlap_ratio = overlap / shorter_dur if shorter_dur > 0 else 0
 
-        if overlap_ratio > 0.5:
-            # Gabung: ambil start terawal, end terakhir
+        if overlap_ratio > 0.35:
+            # Pilih satu klip dengan skor tertinggi dan buang duplikat yang overlap (JANGAN digabung agar durasi tidak bengkak!)
             logger.info(
-                f"Merging overlapping clips: "
-                f"[{prev_start:.1f}-{prev_end:.1f}] + [{curr_start:.1f}-{curr_end:.1f}] "
+                f"Removing overlap duplicate: "
+                f"[{prev_start:.1f}-{prev_end:.1f}](score={prev.get('score', 0)}) vs "
+                f"[{curr_start:.1f}-{curr_end:.1f}](score={current.get('score', 0)}) "
                 f"(overlap={overlap_ratio:.0%})"
             )
-            new_start = min(prev_start, curr_start)
-            new_end = max(prev_end, curr_end)
-
-            # Gunakan metadata dari clip dengan score lebih tinggi
             if current.get("score", 0) > prev.get("score", 0):
-                base = dict(current)
-            else:
-                base = dict(prev)
-
-            base["start"] = round(new_start, 3)
-            base["end"] = round(new_end, 3)
-            base["duration"] = round(new_end - new_start, 3)
-            base["words"] = [
-                w for w in all_words
-                if w["start"] >= new_start - 0.2 and w["end"] <= new_end + 0.2
-            ]
-            merged[-1] = base
+                merged[-1] = current
+            # Jika prev score >= current, kita abaikan current
         else:
             merged.append(current)
 
-    # Re-index
+    # Re-index dan pastikan durasi klip rasional (maksimum 90 detik untuk Shorts/Reels/TikTok)
     for i, clip in enumerate(merged):
+        if clip.get("duration", 0) > 90.0:
+            logger.warning(f"Clip {i+1} duration ({clip.get('duration')}s) exceeds 90s, trimming to 90s max for fast rendering.")
+            clip["end"] = round(clip["start"] + 90.0, 3)
+            clip["duration"] = 90.0
+            clip["words"] = [
+                w for w in all_words
+                if w["start"] >= clip["start"] - 0.2 and w["end"] <= clip["end"] + 0.2
+            ]
         clip["index"] = i + 1
 
     if len(merged) < len(clips):
         logger.info(
             f"De-duplication: {len(clips)} clips → {len(merged)} clips "
-            f"({len(clips) - len(merged)} merged due to >50% overlap)"
+            f"({len(clips) - len(merged)} removed due to >35% overlap)"
         )
 
     return merged

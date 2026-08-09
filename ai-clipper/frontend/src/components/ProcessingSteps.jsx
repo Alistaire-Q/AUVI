@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CloudDownload, AudioWaveform, Brain, Scissors, Captions, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { CloudDownload, AudioWaveform, Brain, Scissors, Captions, CheckCircle, AlertCircle, Loader2, Sparkles, AudioLines, Video } from 'lucide-react';
 
 export default function ProcessingSteps({ currentStep, progress, message, status, error, language }) {
   const translateMessage = (msg) => {
@@ -25,11 +25,10 @@ export default function ProcessingSteps({ currentStep, progress, message, status
     { id: 3, label: language === 'id' ? 'Menganalisis' : 'Analyzing', icon: Brain, detail: language === 'id' ? 'Mendeteksi hook, klimaks, emosi, dan interupsi pola.' : 'Detecting hooks, payoffs, emotion spikes and pattern interrupts.' },
     { id: 4, label: language === 'id' ? 'Membuat klip' : 'Generating clips', icon: Scissors, detail: language === 'id' ? 'Memproses klip siap tayang dengan judul dan skor.' : 'Rendering ready-to-post clips with titles and scores.' },
   ];
-  // Lightweight animated waveform + score bars for the live preview panel
+  // Lightweight animated waveform matrix for the Live Neural Hub
   const [waveform, setWaveform] = useState(() =>
-    Array.from({ length: 48 }, () => 0.2 + Math.random() * 0.8),
+    Array.from({ length: 36 }, () => 0.2 + Math.random() * 0.8),
   );
-  const [scoreBars, setScoreBars] = useState(() => Array.from({ length: 5 }, () => 0));
 
   const active = status !== 'failed' && status !== 'completed' && currentStep > 0;
 
@@ -43,15 +42,6 @@ export default function ProcessingSteps({ currentStep, progress, message, status
         }),
       );
     }, 90);
-    return () => clearInterval(interval);
-  }, [active]);
-
-  useEffect(() => {
-    if (!active) return;
-    const targets = [94, 88, 82, 76, 70];
-    const interval = setInterval(() => {
-      setScoreBars((prev) => prev.map((b, i) => Math.min(targets[i], b + 5)));
-    }, 120);
     return () => clearInterval(interval);
   }, [active]);
 
@@ -149,68 +139,123 @@ export default function ProcessingSteps({ currentStep, progress, message, status
           )}
         </div>
 
-        {/* Live preview panel */}
+        {/* Live Neural Hub panel (Replaces fixed clip bars) */}
         <motion.div
-          key={currentStep}
+          key="live-panel"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="rounded-xl border border-border bg-card/60 p-4 backdrop-blur"
+          className="rounded-2xl border border-accent-1/20 bg-gradient-to-br from-card/80 via-card/50 to-slate-900/60 p-5 backdrop-blur-xl shadow-lg shadow-black/20 flex flex-col justify-between"
         >
-          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-text-muted">
-            <Brain className="w-3.5 h-3.5 text-accent-1" />
-            {status === 'completed' ? (language === 'id' ? 'Menyusun klip Anda' : 'Composing your clips') : (language === 'id' ? 'Analisis langsung' : 'Live analysis')}
-            {active && (
-              <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-accent-1">
-                <span className="size-1.5 animate-pulse rounded-full bg-accent-1" />
-                streaming
-              </span>
+          <div>
+            {/* Top Header */}
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-border/50">
+              <div className="flex items-center gap-2.5 text-xs font-semibold text-text-primary">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-accent-1/15 text-accent-1 shadow-sm shadow-accent-1/20">
+                  <Brain className="w-4 h-4 animate-pulse" />
+                </div>
+                <span>{language === 'id' ? 'Pusat Komputasi Neural AI' : 'AI Neural Computing Hub'}</span>
+              </div>
+              {active && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-1/30 bg-accent-1/10 px-2.5 py-1 text-[10px] font-mono text-accent-1 tracking-wide uppercase">
+                  <span className="size-1.5 animate-ping rounded-full bg-accent-1 mr-0.5" />
+                  Live Tensor Engine
+                </span>
+              )}
+            </div>
+
+            {status === 'completed' ? (
+              <div className="py-12 text-center">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-1/20 text-accent-1 shadow-lg shadow-accent-1/30"
+                >
+                  <CheckCircle className="w-7 h-7" />
+                </motion.div>
+                <p className="mt-4 text-sm font-semibold text-text-primary">{language === 'id' ? 'Klip siap tayang!' : 'Clips ready to ship!'}</p>
+                <p className="mt-1 text-xs text-text-muted">{language === 'id' ? 'Mengarahkan ke dasbor studio Anda...' : 'Routing you to your studio dashboard…'}</p>
+              </div>
+            ) : status === 'failed' ? (
+              <div className="py-12 text-center">
+                <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-danger/15 text-danger">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <p className="mt-3 text-sm font-medium text-danger">{language === 'id' ? 'Analisis terhenti.' : 'Analysis interrupted.'}</p>
+              </div>
+            ) : (
+              <>
+                {/* Realtime Waveform Matrix */}
+                <div className="space-y-1.5 mb-5">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
+                    <span className="flex items-center gap-1.5 text-accent-1">
+                      <AudioLines className="w-3 h-3 animate-bounce" />
+                      {language === 'id' ? 'FREKUENSI SINYAL ANALISIS' : 'AI SIGNAL FREQUENCY ANALYSIS'}
+                    </span>
+                    <span className="text-[10px] text-text-muted">9:16 VERTICAL RE-ENCODING</span>
+                  </div>
+                  <div className="flex h-24 items-end justify-between gap-1 rounded-xl bg-black/40 p-3 border border-border/40 shadow-inner">
+                    {waveform.map((b, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-sm bg-gradient-to-t from-emerald-600 via-accent-1 to-emerald-300 transition-all duration-100 ease-in-out shadow-sm shadow-accent-1/20"
+                        style={{ height: `${Math.max(12, b * 100)}%`, opacity: 0.35 + b * 0.65 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* AI Telemetry 4-Grid (No Fake Clip Bars) */}
+                <div className="grid grid-cols-2 gap-2.5 mb-5">
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted mb-1">
+                      <Brain className="w-3 h-3 text-accent-1" />
+                      <span>{language === 'id' ? 'Model Analitik' : 'Analytical Model'}</span>
+                    </div>
+                    <span className="text-xs font-mono font-medium text-text-primary">Groq Llama 3.3 / Whisper</span>
+                  </div>
+
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted mb-1">
+                      <Scissors className="w-3 h-3 text-accent-1" />
+                      <span>{language === 'id' ? 'Target Durasi' : 'Target Duration'}</span>
+                    </div>
+                    <span className="text-xs font-mono font-medium text-accent-1">25s – 75s (Viral Cut)</span>
+                  </div>
+
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted mb-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>{language === 'id' ? 'Fokus Konten' : 'Content Focus'}</span>
+                    </div>
+                    <span className="text-xs font-medium text-text-primary">{language === 'id' ? 'Hook & Klimaks Emosi' : 'Hooks & Emotional Peaks'}</span>
+                  </div>
+
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-2.5 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted mb-1">
+                      <Video className="w-3 h-3 text-sky-400" />
+                      <span>{language === 'id' ? 'Pelacak Wajah' : 'Face Tracking'}</span>
+                    </div>
+                    <span className="text-xs font-medium text-text-primary">{language === 'id' ? 'Aktif (9:16 Center Focus)' : 'Active (9:16 Center Focus)'}</span>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
-          {status === 'completed' ? (
-            <div className="py-6 text-center">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="mx-auto grid size-12 place-items-center rounded-full bg-accent-1/15 text-accent-1"
-              >
-                <CheckCircle className="w-6 h-6" />
-              </motion.div>
-              <p className="mt-3 text-sm font-medium">{language === 'id' ? 'Klip siap tayang' : 'Clips ready to ship'}</p>
-              <p className="mt-1 text-xs text-text-muted">{language === 'id' ? 'Mengarahkan ke dasbor...' : 'Routing you to your dashboard…'}</p>
+          {/* Live Terminal Status Box */}
+          {status !== 'completed' && status !== 'failed' && (
+            <div className="rounded-xl bg-black/60 border border-accent-1/30 p-3 font-mono text-[11px] shadow-inner space-y-1">
+              <div className="flex items-center gap-2 text-accent-1/70 text-[10px] border-b border-border/30 pb-1">
+                <AudioWaveform className="w-3 h-3 text-accent-1" />
+                <span>AUVI_PIPELINE_LOGS // STAGE_{currentStep || 1}</span>
+              </div>
+              <div className="text-text-primary flex items-center gap-2 pt-0.5">
+                <span className="text-accent-1 font-bold">&gt;</span>
+                <span className="truncate">{translateMessage(message) || (language === 'id' ? 'Memproses analisis tensor...' : 'Processing tensor analysis...')}</span>
+                <span className="w-1.5 h-3.5 bg-accent-1 inline-block animate-pulse ml-auto shrink-0" />
+              </div>
             </div>
-          ) : status === 'failed' ? (
-            <p className="py-6 text-center text-xs text-text-muted">{language === 'id' ? 'Analisis terhenti.' : 'Analysis interrupted.'}</p>
-          ) : (
-            <>
-              {/* Waveform */}
-              <div className="flex h-20 items-end justify-between gap-0.5">
-                {waveform.map((b, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-t-sm bg-slate-900 transition-all"
-                    style={{ height: `${Math.max(6, b * 100)}%`, opacity: 0.5 + b * 0.5 }}
-                  />
-                ))}
-              </div>
-              {/* Score bars */}
-              <div className="mt-4 space-y-2">
-                {scoreBars.map((score, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="w-16 shrink-0 text-[11px] text-text-muted">{language === 'id' ? 'Klip' : 'Clip'} {i + 1}</span>
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
-                      <motion.div
-                        className="h-full bg-slate-900"
-                        animate={{ width: `${score}%` }}
-                        transition={{ duration: 0.2 }}
-                      />
-                    </div>
-                    <span className="w-9 shrink-0 text-right text-[11px] font-mono font-medium text-accent-1">{score}</span>
-                  </div>
-                ))}
-              </div>
-            </>
           )}
         </motion.div>
       </div>

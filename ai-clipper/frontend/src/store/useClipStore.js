@@ -72,8 +72,19 @@ const useClipStore = create((set, get) => ({
 
   // ─── UI State ───
   settingsOpen: false,
-  language: 'en', // 'en' or 'id'
-  setLanguage: (lang) => set({ language: lang }),
+  language: (() => {
+    try {
+      return localStorage.getItem('ai-clipper-lang') || 'en';
+    } catch {
+      return 'en';
+    }
+  })(), // 'en' or 'id'
+  setLanguage: (lang) => {
+    try {
+      localStorage.setItem('ai-clipper-lang', lang);
+    } catch {}
+    set({ language: lang });
+  },
   toggleSettings: () => set((state) => ({ settingsOpen: !state.settingsOpen })),
   closeSettings: () => set({ settingsOpen: false }),
 
