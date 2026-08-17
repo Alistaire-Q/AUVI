@@ -474,15 +474,45 @@ LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
 
 > ⚠️ **PENTING:** Ganti `gsk_PASTE_API_KEY_KAMU_DISINI` dengan API Key yang sudah kamu salin dari Langkah 6!
 
-#### Konfigurasi Opsional Lainnya:
+#### Konfigurasi Full (Template Opsional & Lanjutan):
+
+Jika Anda menggunakan Docker, Supabase, Google OAuth, atau Upstash Redis, Anda dapat menggunakan *template* penuh berikut untuk file `.env` Anda:
 
 ```env
-# Jika ingin menggunakan provider LLM lain (default: Groq)
+# AUVI Configuration
+# Get free API key at: https://console.groq.com
+GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+
+# LLM API Key (used by analyzer.py - falls back to GROQ_API_KEY if not set)
+LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+
+# LLM Configuration (optional - defaults to Groq llama-3.3-70b-versatile)
 # LLM_BASE_URL=https://api.groq.com/openai/v1
 # LLM_MODEL=llama-3.3-70b-versatile
 
-# Jika ingin mengubah lokasi penyimpanan (default: ./storage)
+# Storage path (optional - defaults to ./storage)
 # STORAGE_PATH=./storage
+
+# ──────────────────────────────────────────────
+# YouTube Automation & Approval System
+# ──────────────────────────────────────────────
+
+# Supabase (PostgreSQL) Database URL
+DATABASE_URL=your_postgresql_database_url_here
+
+# Google OAuth 2.0 Credentials (for YouTube)
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+
+# Redirect URL for Google OAuth callback
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/youtube/callback
+FRONTEND_URL=http://localhost:5173
+
+# Redis Configuration (Required for ARQ Background Worker)
+REDIS_HOST=your_redis_host_here
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password_here
+REDIS_SSL=true
 ```
 
 ---
