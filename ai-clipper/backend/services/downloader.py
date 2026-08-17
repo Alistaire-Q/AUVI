@@ -92,18 +92,6 @@ def download_youtube(
         "overwrites": True,
         "restrictfilenames": True,
         "windowsfilenames": True,
-        "http_headers": {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/131.0.0.0 Safari/537.36"
-            ),
-        },
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android"]
-            }
-        },
         "retries": 10,
         "fragment_retries": 10,
     }

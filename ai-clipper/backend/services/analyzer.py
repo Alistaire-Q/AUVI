@@ -25,11 +25,10 @@ logger = logging.getLogger(__name__)
 DEFAULT_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 HTTP_TIMEOUT = 120.0
-# Output LLM berupa JSON daftar klip. max_tokens lama (3000) sering terpotong
-# di tengah objek JSON → json.loads gagal → analyzer gagal → job failed (500).
-# Naikkan batas agar JSON utuh; model tetap bebas memendekkan jawaban.
-# NOTE: Dikurangi menjadi 2000 agar tidak terkena rate limit Groq (12000 TPM) saat durasi video panjang.
-LLM_MAX_TOKENS = 2000
+# NOTE: Sebelumnya dikurangi menjadi 2000 untuk menghindari rate limit Groq.
+# Ini menyebabkan output LLM terpotong dan analisis clip menjadi dangkal.
+# Chunking 600 detik sudah memecah beban, jadi 3500 token per-chunk aman.
+LLM_MAX_TOKENS = 3500
 
 
 def _get_llm_config() -> dict:
@@ -75,7 +74,7 @@ def _build_transcript_text(words: list[dict]) -> str:
     for w in words:
         buf_words.append(w["word"])
 
-        if w["end"] - buf_start >= 30.0 or (w["end"] - last_end > 2.0):
+        if w["end"] - buf_start >= 10.0 or (w["end"] - last_end > 2.0):
             ts = f"[{int(buf_start)}]"
             lines.append(f"{ts} {' '.join(buf_words)}")
             buf_words = []

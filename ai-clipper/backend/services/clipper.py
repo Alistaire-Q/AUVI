@@ -271,6 +271,7 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
         f"PlayResX: {play_res_x}",
         f"PlayResY: {play_res_y}",
         "WrapStyle: 1",
+        "Collisions: Reverse",
         "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
@@ -310,8 +311,9 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
                 # End of the chunk. Ensure it doesn't overlap with the NEXT chunk!
                 if c_idx < len(chunks) - 1:
                     next_chunk_start = chunks[c_idx+1][0]["start"]
-                    # Cap the end time slightly before the next chunk starts to prevent ASS collision stacking
-                    w_end = min(cw["end"] + 0.15, next_chunk_start - 0.01)
+                    # Cap the end time well before the next chunk starts
+                    # Use 0.05s gap (≈1-2 frames at 30fps) to prevent ASS collision stacking
+                    w_end = min(cw["end"] + 0.15, next_chunk_start - 0.05)
                     # Safety boundary
                     w_end = max(w_start + 0.05, w_end)
                 else:
@@ -332,10 +334,46 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
             lines.append(f"Dialogue: 0,{start_str},{end_str},Default,,0,0,0,,{full_text}")
             event_count += 1
 
+    # ── Post-processing: enforce no-overlap across ALL dialogue events ──
+    # Parse back all Dialogue lines and ensure each event ends before the next starts.
+    # This is the final safety net against subtitle stacking, regardless of how chunks were built.
+    dialogue_prefix = "Dialogue: 0,"
+    dialogue_indices = [i for i, line in enumerate(lines) if line.startswith(dialogue_prefix)]
+    
+    for di in range(len(dialogue_indices) - 1):
+        curr_idx = dialogue_indices[di]
+        next_idx = dialogue_indices[di + 1]
+        
+        # Extract current event's end time and next event's start time
+        curr_parts = lines[curr_idx].split(",")
+        next_parts = lines[next_idx].split(",")
+        # Format: Dialogue: 0,START,END,Style,...
+        curr_end_str = curr_parts[2]
+        next_start_str = next_parts[1]
+        
+        # Parse times to compare
+        def _parse_ass_time(ts: str) -> float:
+            parts = ts.strip().split(":")
+            h = int(parts[0])
+            m = int(parts[1])
+            s_cs = parts[2].split(".")
+            s = int(s_cs[0])
+            cs = int(s_cs[1]) if len(s_cs) > 1 else 0
+            return h * 3600 + m * 60 + s + cs / 100.0
+        
+        curr_end_t = _parse_ass_time(curr_end_str)
+        next_start_t = _parse_ass_time(next_start_str)
+        
+        # If current event ends at or after next event starts → trim it
+        if curr_end_t >= next_start_t - 0.02:  # 20ms minimum gap
+            new_end_t = max(next_start_t - 0.04, _parse_ass_time(curr_parts[1]) + 0.03)
+            curr_parts[2] = format_ass_time(new_end_t)
+            lines[curr_idx] = ",".join(curr_parts)
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
-    logger.info(f"Generated ASS: {output_path} ({event_count} events)")
+    logger.info(f"Generated ASS: {output_path} ({event_count} events, overlap-validated)")
     return output_path
 
 
@@ -439,6 +477,8 @@ def generate_clip(
                 crop_filter = "crop=ih*9/16:ih:iw/2-ow/2:0"
 
     # ── 3. Scale to target resolution (with HD Lanczos Scaling) ──
+    # force_original_aspect_ratio=decrease already prevents upscaling when
+    # the source is smaller than the target. Lanczos is the best quality scaler.
     if frame_size == "16:9":
         scale_filter = "scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"
     elif frame_size == "1:1":
@@ -446,16 +486,19 @@ def generate_clip(
     else: # 9:16
         scale_filter = "scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos,pad=1080:1920:(ow-iw)/2:(oh-ih)/2"
 
-    # Tambahan filter penajaman (sharpening) untuk mengembalikan detail HD setelah di-crop
-    sharpen_filter = "unsharp=5:5:1.0:5:5:0.0"
+    # NOTE: unsharp/sharpening filter REMOVED.
+    # Previous "fix" added unsharp=5:5:1.0 to "restore HD detail after crop",
+    # but it actually AMPLIFIED H.264 compression artifacts, making the video
+    # look "grainy/crunchy" (burik). Lanczos scaling is already the best
+    # quality downscaler — no post-sharpening needed.
 
     # ── 4. Build subtitle filter ──
     if srt_path and srt_ffmpeg_path and subtitle_enabled:
         sub_filter = f"subtitles='{srt_ffmpeg_path}'"
-        video_filter = f"{crop_filter},{scale_filter},{sharpen_filter},{sub_filter}"
+        video_filter = f"{crop_filter},{scale_filter},{sub_filter}"
     else:
-        # No subtitles — just crop + scale + sharpen
-        video_filter = f"{crop_filter},{scale_filter},{sharpen_filter}"
+        # No subtitles — just crop + scale
+        video_filter = f"{crop_filter},{scale_filter}"
 
     # ── 5. Execute FFmpeg — cut EXACTLY at LLM timestamps ──
     # Optimasi kecepatan + kualitas:
@@ -470,7 +513,8 @@ def generate_clip(
             vcodec="libx264",
             acodec="aac",
             preset="fast",
-            crf=18, # Diturunkan dari 23 ke 18 (Visually Lossless HD)
+            crf=18,
+            pix_fmt="yuv420p",  # Ensure compatible color space (prevents player issues)
             movflags="faststart",
             threads=0,
         )

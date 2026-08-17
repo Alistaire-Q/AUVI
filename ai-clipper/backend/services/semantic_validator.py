@@ -352,8 +352,8 @@ def _deduplicate_clips(
     3. Jika overlap > 50% dari durasi clip yang lebih pendek → gabung.
     4. Clip gabungan mengambil start terawal dan end terakhir.
     """
-    if len(clips) <= 1:
-        return clips
+    if not clips:
+        return []
 
     # Urutkan berdasarkan start time
     sorted_clips = sorted(clips, key=lambda c: c.get("start", 0))
@@ -393,11 +393,49 @@ def _deduplicate_clips(
             merged.append(current)
 
     # Re-index dan pastikan durasi klip rasional (maksimum 90 detik untuk Shorts/Reels/TikTok)
+    # PENTING: Jangan hard-cut di detik ke-90! Cari sentence boundary terdekat
+    # sebelum batas agar clip tidak terpotong di tengah kalimat/penjelasan.
+    MAX_CLIP_DURATION = 90.0
     for i, clip in enumerate(merged):
-        if clip.get("duration", 0) > 90.0:
-            logger.warning(f"Clip {i+1} duration ({clip.get('duration')}s) exceeds 90s, trimming to 90s max for fast rendering.")
-            clip["end"] = round(clip["start"] + 90.0, 3)
-            clip["duration"] = 90.0
+        if clip.get("duration", 0) > MAX_CLIP_DURATION:
+            logger.warning(
+                f"Clip {i+1} duration ({clip.get('duration')}s) exceeds {MAX_CLIP_DURATION}s, "
+                f"smart-trimming to nearest sentence boundary."
+            )
+            clip_start = clip["start"]
+            max_end = clip_start + MAX_CLIP_DURATION
+
+            # Cari kata-kata dalam rentang clip ini
+            clip_words = [
+                w for w in all_words
+                if w["start"] >= clip_start - 0.2 and w["end"] <= max_end + 0.2
+            ]
+
+            # Cari sentence boundary terakhir SEBELUM batas MAX_CLIP_DURATION
+            best_end = None
+            for w in reversed(clip_words):
+                if w["end"] <= max_end and _is_sentence_boundary(w["word"]):
+                    best_end = w["end"]
+                    break
+
+            if best_end and best_end > clip_start + 15.0:
+                # Snap ke sentence boundary
+                clip["end"] = round(best_end, 3)
+            else:
+                # Fallback: cari jeda panjang terdekat sebelum batas
+                best_pause_end = None
+                for j in range(len(clip_words) - 1):
+                    if clip_words[j]["end"] <= max_end:
+                        gap = clip_words[j + 1]["start"] - clip_words[j]["end"]
+                        if gap > 0.8:
+                            best_pause_end = clip_words[j]["end"]
+                if best_pause_end and best_pause_end > clip_start + 15.0:
+                    clip["end"] = round(best_pause_end, 3)
+                else:
+                    # Absolute last resort: hard cut at max
+                    clip["end"] = round(max_end, 3)
+
+            clip["duration"] = round(clip["end"] - clip["start"], 3)
             clip["words"] = [
                 w for w in all_words
                 if w["start"] >= clip["start"] - 0.2 and w["end"] <= clip["end"] + 0.2
