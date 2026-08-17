@@ -57,13 +57,13 @@ Semua proses AI menggunakan **Groq API** yang **100% GRATIS**.
 
 ## Fitur Utama
 
-- ✅ Input dari **YouTube URL** atau **upload file video** langsung
+- ✅ Input dari **YouTube URL** atau **upload file video** langsung (Resolusi HD Dinamis)
 - ✅ Transkripsi otomatis dengan **word-level timestamps** (Groq Whisper API)
 - ✅ AI menganalisis konten dan memilih segmen paling menarik (Llama 3.3 70B)
-- ✅ **Crop vertikal 9:16** otomatis dengan face tracking
-- ✅ **Subtitle bergaya TikTok** (bold, burn-in ke video)
+- ✅ **Crop vertikal 9:16** otomatis dengan face tracking dan **HD Video Encoding**
+- ✅ **Subtitle bergaya TikTok** (bold, burn-in ke video) dengan *overlap prevention*
 - ✅ Progress tracking **real-time** via Server-Sent Events (SSE)
-- ✅ Validasi semantik untuk memastikan klip memiliki narasi lengkap
+- ✅ Validasi semantik pintar (*Smart Trim*) untuk memastikan klip memiliki narasi utuh
 - ✅ **100% gratis** — menggunakan Groq API
 
 ---
@@ -117,9 +117,9 @@ Intelek utama dari AUVI tersimpen pada rancangan *Prompt Engineering* berderajat
 
 Sering kali AI mengembalikan *timestamp* detik yang melesat sedikit dari ucapan asli. Untuk mengatasinya, AUVI mengintegrasikan sistem pasca-validasi lingual khusus (`semantic_validator.py`):
 
-- **Millisecond Word-Snap:** Menyempurnakan presisi detik dari LLM dengan menarik waktu mulai (*start_time*) dan waktu akhir (*end_time*) langsung ke batas kata dan tanda baca mutlak (`.`, `!`, `?`) berkat integrasi pengidentifikasi waktu tingkat kata (*word-level timestamp*) dari *Groq Whisper API*.
+- **Millisecond Word-Snap & Subtitle Anti-Overlap:** Menyempurnakan presisi detik dari LLM dengan menarik waktu mulai (*start_time*) dan waktu akhir (*end_time*) langsung ke batas kata dan tanda baca mutlak (`.`, `!`, `?`) berkat integrasi pengidentifikasi waktu tingkat kata dari *Groq Whisper API*. Engine rendering juga menyuntikkan *gap* paksa 0.05s antar-teks untuk mencegah bentrok/overlap pada *subtitle*.
 - **List & Question Completion Extension:** Mengandung kecerdasan linguistik dwibahasa (**Bahasa Indonesia & English**). Apabila AI memotong klip sesaat sebelum suatu daftar belum genap terabaikan (*"Ada 3 rahasia..."*) atau sesaat setelah pertanyaan pancingan belum terjawab utuh (*"Mengapa bisa rugi? Karena..."*), engine validator otomatis memperlebar durasi klip hingga penjelasan penutupnya tuntas dicamkan.
-- **Dangling Connector Elimination & Overlap Deduplication:** Menyingkirkan risiko video terpotong pada kata sambung menggantung (*"karena...", "dan...", "walaupun..."*). Serta mergerisasi (gabungan de-duplikasi) apabila model menghasilkan dua klip dengan ketindihan topik melebihi 50% (*overlap limit*).
+- **Smart Trim 90s & Dangling Connector Elimination:** Menyingkirkan risiko video terpotong pada kata sambung menggantung (*"karena...", "dan..."*). Jika durasi klip meledak melebihi batas 90 detik, sistem tidak melakukan potong-paksa (*hard-cut*), melainkan mundur perlahan untuk mencari batas kalimat terdekat sehingga narasi tetap utuh. Serta mergerisasi (gabungan de-duplikasi) klip bertopik sama.
 
 ---
 
