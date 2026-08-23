@@ -1,63 +1,73 @@
-<p align="center"><img src="ai-clipper/frontend/public/logo.svg" width="128" /></p>
+<p align="center"><img src="ai-clipper/frontend/public/logo_white.svg" width="128" /></p>
 
 # 🎬 AUVI — AI Video Clipper
 
-> Tool AI yang secara otomatis memotong video panjang menjadi klip pendek siap viral, lengkap dengan subtitle bergaya TikTok dan crop vertikal 9:16.
+> An AI-powered tool that automatically clips long-form videos into viral-ready shorts, complete with TikTok-style subtitles and a 9:16 vertical crop.
 
 ---
 
-## 📦 Daftar Isi
+## 📦 Table of Contents
 
-- [Apa Itu AUVI?](#apa-itu-auvi)
-- [Fitur Utama](#fitur-utama)
-- [Arsitektur & Struktur Proyek](#arsitektur--struktur-proyek)
-- [Prasyarat Sistem](#prasyarat-sistem)
-- [Panduan Instalasi Lokal (Tanpa Docker)](#panduan-instalasi-lokal-tanpa-docker)
-  - [Langkah 1 — Instal Python 3.11+](#langkah-1--instal-python-311)
-  - [Langkah 2 — Instal Node.js 20+](#langkah-2--instal-nodejs-20)
-  - [Langkah 3 — Instal FFmpeg](#langkah-3--instal-ffmpeg)
-  - [Langkah 4 — Instal Git](#langkah-4--instal-git)
-  - [Langkah 5 — Clone Repository](#langkah-5--clone-repository)
-  - [Langkah 6 — Dapatkan API Key Groq (GRATIS)](#langkah-6--dapatkan-api-key-groq-gratis)
-  - [Langkah 7 — Konfigurasi File .env](#langkah-7--konfigurasi-file-env)
-  - [Langkah 8 — Instal Dependensi Backend (Python)](#langkah-8--instal-dependensi-backend-python)
-  - [Langkah 9 — Instal Dependensi Frontend (Node.js)](#langkah-9--instal-dependensi-frontend-nodejs)
-  - [Langkah 10 — Jalankan Aplikasi](#langkah-10--jalankan-aplikasi)
-- [Panduan Instalasi dengan Docker](#panduan-instalasi-dengan-docker)
-  - [Langkah 1 — Instal Docker Desktop](#langkah-1--instal-docker-desktop)
-  - [Langkah 2 — Clone & Konfigurasi](#langkah-2--clone--konfigurasi)
-  - [Langkah 3 — Jalankan dengan Docker Compose](#langkah-3--jalankan-dengan-docker-compose)
-- [Cara Menggunakan Aplikasi](#cara-menggunakan-aplikasi)
-- [Menghentikan & Menjalankan Ulang](#menghentikan--menjalankan-ulang)
-- [Konfigurasi Lanjutan (Opsional)](#konfigurasi-lanjutan-opsional)
-- [Troubleshooting — Solusi Masalah Umum](#troubleshooting--solusi-masalah-umum)
-- [Penjelasan Teknologi yang Digunakan](#penjelasan-teknologi-yang-digunakan)
-- [Contributing (Berkontribusi)](#contributing-berkontribusi)
-- [Lisensi](#lisensi)
+- [What is AUVI?](#what-is-auvi)
+- [Key Features](#key-features)
+- [Architecture & Project Structure](#architecture--project-structure)
+- [System Requirements](#system-requirements)
+- [Local Installation Guide (Without Docker)](#local-installation-guide-without-docker)
+  - [Step 1 — Install Python 3.11+](#step-1--install-python-311)
+  - [Step 2 — Install Node.js 20+](#step-2--install-nodejs-20)
+  - [Step 3 — Install FFmpeg](#step-3--install-ffmpeg)
+  - [Step 4 — Install Git](#step-4--install-git)
+  - [Step 5 — Clone Repository](#step-5--clone-repository)
+  - [Step 6 — Get a Groq API Key (FREE)](#step-6--get-a-groq-api-key-free)
+  - [Step 7 — Configure .env File](#step-7--configure-env-file)
+  - [Step 8 — Install Backend Dependencies (Python)](#step-8--install-backend-dependencies-python)
+  - [Step 9 — Install Frontend Dependencies (Node.js)](#step-9--install-frontend-dependencies-nodejs)
+  - [Step 10 — Run the Application](#step-10--run-the-application)
+- [Docker Installation Guide](#docker-installation-guide)
+  - [Step 1 — Install Docker Desktop](#step-1--install-docker-desktop)
+  - [Step 2 — Clone & Configure](#step-2--clone--configure)
+  - [Step 3 — Run with Docker Compose](#step-3--run-with-docker-compose)
+- [How to Use the Application](#how-to-use-the-application)
+- [Stopping & Restarting](#stopping--restarting)
+- [Advanced Configuration (Optional)](#advanced-configuration-optional)
+- [Troubleshooting — Common Issues](#troubleshooting--common-issues)
+- [Technologies Used](#technologies-used)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Apa Itu AUVI?
+## What is AUVI?
 
-**AUVI (AI Video Clipper)** adalah aplikasi full-stack yang menggunakan kecerdasan buatan untuk secara otomatis:
+**AUVI (AI Video Clipper)** is a full-stack application that leverages artificial intelligence to automatically:
 
-1. **Mengunduh** video dari YouTube (atau menerima upload langsung)
-2. **Mentranskripsikan** audio menjadi teks dengan timestamp per kata
-3. **Menganalisis** isi konten dan memilih segmen paling menarik/viral
-4. **Memotong** video menjadi klip pendek vertikal (9:16) lengkap dengan subtitle
+1. **Download** videos from YouTube (or accept direct uploads)
+2. **Transcribe** audio to text with word-level timestamps
+3. **Analyze** content and select the most engaging/viral segments
+4. **Clip** the video into short vertical clips (9:16) complete with subtitles
 
-Aplikasi ini terdiri dari dua bagian utama:
+The application consists of two main parts:
 
-| Bagian | Teknologi | Fungsi |
+| Part | Technology | Function |
 |--------|-----------|--------|
-| **Backend** | Python (FastAPI) | Server API — download video, transkripsi, analisis AI, pemotongan klip |
-| **Frontend** | React (Vite) | Antarmuka pengguna di browser — upload, progress tracking, download hasil |
+| **Backend** | Python (FastAPI) | API Server — handles video downloads, transcription, AI analysis, and clipping |
+| **Frontend** | React (Vite) | Web-based User Interface — upload, track progress, download results |
 
-Semua proses AI menggunakan **Groq API** yang **100% GRATIS**.
+All AI processing uses the **Groq API** which is **100% FREE**.
 
 ---
 
-## Fitur Utama (Key Features)
+## Key Features
+
+**🇺🇸 English:**
+- ✅ Input from **YouTube URLs** or **direct video file uploads** (Dynamic HD Resolution fallback)
+- ✅ Automatic transcription with **word-level timestamps** (Groq Whisper API)
+- ✅ AI analyzes content and selects the most engaging segments (Llama 3.3 70B)
+- ✅ Automatic **9:16 vertical crop** with face tracking and **HD Video Encoding**
+- ✅ **TikTok-style subtitles** (bold, burned-in) with *subtitle overlap prevention*
+- ✅ **Real-time** progress tracking via Server-Sent Events (SSE)
+- ✅ Smart semantic validation (*Smart Trim*) to ensure clips have complete narrative arcs
+- ✅ **100% Free** — entirely powered by the Groq API
 
 **🇮🇩 Bahasa Indonesia:**
 - ✅ Input dari **YouTube URL** atau **upload file video** langsung (Resolusi HD Dinamis)
@@ -69,21 +79,11 @@ Semua proses AI menggunakan **Groq API** yang **100% GRATIS**.
 - ✅ Validasi semantik pintar (*Smart Trim*) untuk memastikan klip memiliki narasi utuh
 - ✅ **100% gratis** — menggunakan Groq API
 
-**🇬🇧 English:**
-- ✅ Input from **YouTube URLs** or **direct video file uploads** (Dynamic HD Resolution fallback)
-- ✅ Automatic transcription with **word-level timestamps** (Groq Whisper API)
-- ✅ AI analyzes content and selects the most engaging segments (Llama 3.3 70B)
-- ✅ Automatic **9:16 vertical crop** with face tracking and **HD Video Encoding**
-- ✅ **TikTok-style subtitles** (bold, burned-in) with *subtitle overlap prevention*
-- ✅ **Real-time** progress tracking via Server-Sent Events (SSE)
-- ✅ Smart semantic validation (*Smart Trim*) to ensure clips have complete narrative arcs
-- ✅ **100% Free** — entirely powered by the Groq API
-
 ---
 
-## Arsitektur & Struktur Proyek
+## Architecture & Project Structure
 
-AUVI dibangun menggunakan arsitektur modular modern berbasis mikro-layanan internal (*internal micro-pipeline*) yang mendisahkan beban kerja I/O intensif (unduh video & transmisi API) dari beban kerja komputasional murni (pemrosesan audio/video FFmpeg & parsing AI).
+AUVI is built using a modern modular architecture based on an *internal micro-pipeline* that decouples I/O intensive workloads (video downloads & API transmissions) from pure computational workloads (FFmpeg media processing & AI parsing).
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -106,151 +106,150 @@ AUVI dibangun menggunakan arsitektur modular modern berbasis mikro-layanan inter
 
 ---
 
-### 🏛️ 1. Arsitektur Pemrosesan Asinkron (Background Task Queue)
+### 🏛️ 1. Asynchronous Processing Architecture (Background Task Queue)
 
-Pemrosesan video berdurasi panjang membutuhkan manajemen memori dan ketahanan sistem yang kuat agar tidak membebani server utama atau memicu HTTP Timeout:
+Processing long-form videos requires robust memory management and system resilience to prevent server overloads and HTTP Timeouts:
 
-- **Decoupling dengan ARQ & Upstash Redis:** Request analisis video yang masuk melalui antarmuka FastAPI tidak langsung diolah di *thread* HTTP utama. Job mendaftarkan diri ke antrean in-memory berkecepatan tinggi **Upstash Redis (SSL)** dan dieksekusi oleh **ARQ Worker Asinkron** di belakang layar.
-- **Rate-Limit Resilience & Fault Tolerance:** Worker dilengkapi proteksi batas waktu per-job hingga **1 jam (`job_timeout = 3600`)** dan logika mekanisme *retry* eksponensial. Apabila kuota token per menit (TPM) dari API eksternal (Groq) menyentuh limit sementara, worker menunda proses (*smart sleep*) secara mandiri dan melaju kembali begitu jatah token diperbarui oleh jaringan terluar, tanpa pernah menggagalkan eksekusi utama Anda di tengah jalan.
-- **Real-Time SSE Tracking:** Server menyiarkan update status per milidetik menggunakan protokol *Server-Sent Events (SSE)* ke frontend React. Pengguna dapat melacak alur proses *(Downloading ➔ Transcribing ➔ Analyzing ➔ Clipping ➔ Ready)* secara transparan.
-
----
-
-### 🧠 2. Arsitektur AI & NLP (Smart Chunking & Pure-AI Guarantee)
-
-Intelek utama dari AUVI tersimpen pada rancangan *Prompt Engineering* berderajat tinggi dan teknik pemangsaan teks (*chunking*) bermutu tinggi:
-
-- **Senior Video Editor Prompting (Llama 3.3 70B):** LLM bertindak sebagai otoritas pengambil keputusan tunggal (*sole decision-maker*). Model diberikan instruksi editor profesional untuk mencari *viral hooks*, membedahi materi video panjang beraturan menjadi beberapa sub-topik independen berdaya jual tinggi (30–180 detik) dengan skor potensi vitalitas dari 1 hingga 100.
-- **Sentence-Aware Smart Chunking (Hemat Token hingga 97%):** Untuk menangani video sangat panjang tanpa risiko halusinasi atau terpotongnya output JSON, transkrip dibagi ke dalam blok-blok waktu seimbang per 10 menit (600 detik) yang **dilarang memotong di tengah kalimat**. Jam waktu sistem diriset dengan ketat per setiap blok sehingga video berdurasi 35+ menit cukup menggunakan 4 panggilan jaringan (hanya ~4.000 token dari kuota harian), sangat hemat dan cepat.
-- **Pure-AI Quality Guarantee (Zero Dummy Fallback):** Sistem AUVI berkomitmen terhadap kemurnian analisis AI. Apabila jaringan API terputus atau limit kuota harian token pengguna benar-benar habis total, sistem menolam keras membuat klip dummy berbasis hitungan kata kasar di bawah tangan, melainkan langsung mengabarkan pesan eror secara terbuka agar integritas dan keluwesan alur konten presentasi Anda tetap terjaga tanpa klip cacat.
+- **Decoupling with ARQ & Upstash Redis:** Video analysis requests entering through the FastAPI interface are not processed immediately on the main HTTP thread. The job is queued in the high-speed in-memory **Upstash Redis (SSL)** and executed by an **Asynchronous ARQ Worker** in the background.
+- **Rate-Limit Resilience & Fault Tolerance:** Workers have job timeouts up to **1 hour (`job_timeout = 3600`)** and exponential backoff retry mechanisms. If the Tokens-Per-Minute (TPM) quota from external APIs (Groq) hits a temporary limit, the worker intuitively sleeps (*smart sleep*) and resumes as soon as tokens refresh, without ever failing your main execution midway.
+- **Real-Time SSE Tracking:** The server broadcasts millisecond status updates via *Server-Sent Events (SSE)* to the React frontend. Users can track the pipeline *(Downloading ➔ Transcribing ➔ Analyzing ➔ Clipping ➔ Ready)* transparently.
 
 ---
 
-### 🔍 3. Arsitektur Validator Semantik & Linguistik Pasca-LLM
+### 🧠 2. AI & NLP Architecture (Smart Chunking & Pure-AI Guarantee)
 
-Sering kali AI mengembalikan *timestamp* detik yang melesat sedikit dari ucapan asli. Untuk mengatasinya, AUVI mengintegrasikan sistem pasca-validasi lingual khusus (`semantic_validator.py`):
+AUVI's core intelligence lies in high-fidelity *Prompt Engineering* and premium text *chunking* techniques:
 
-- **Millisecond Word-Snap & Subtitle Anti-Overlap:** Menyempurnakan presisi detik dari LLM dengan menarik waktu mulai (*start_time*) dan waktu akhir (*end_time*) langsung ke batas kata dan tanda baca mutlak (`.`, `!`, `?`) berkat integrasi pengidentifikasi waktu tingkat kata dari *Groq Whisper API*. Engine rendering juga menyuntikkan *gap* paksa 0.05s antar-teks untuk mencegah bentrok/overlap pada *subtitle*.
-- **List & Question Completion Extension:** Mengandung kecerdasan linguistik dwibahasa (**Bahasa Indonesia & English**). Apabila AI memotong klip sesaat sebelum suatu daftar belum genap terabaikan (*"Ada 3 rahasia..."*) atau sesaat setelah pertanyaan pancingan belum terjawab utuh (*"Mengapa bisa rugi? Karena..."*), engine validator otomatis memperlebar durasi klip hingga penjelasan penutupnya tuntas dicamkan.
-- **Smart Trim 90s & Dangling Connector Elimination:** Menyingkirkan risiko video terpotong pada kata sambung menggantung (*"karena...", "dan..."*). Jika durasi klip meledak melebihi batas 90 detik, sistem tidak melakukan potong-paksa (*hard-cut*), melainkan mundur perlahan untuk mencari batas kalimat terdekat sehingga narasi tetap utuh. Serta mergerisasi (gabungan de-duplikasi) klip bertopik sama.
-
----
-
-### 🌐 4. Arsitektur Database Cloud & Otomasi Publikasi
-
-- **Supabase PostgreSQL Persistent Layer:** Metadata alur eksekusi, riwayat performa klip, skor viral, serta data akun pengguna diorganisir menggunakan standar basis data transaksional tangguh bersandar di Cloud PostgreSQL (Supabase).
-- **One-Click YouTube Shorts Automation:** Integrasi bawaan kredensial autentikasi **Google OAuth 2.0 API** mengizinkan setiap klip berakurasi tinggi yang telah dienkapsulasi subtitle TikTok bergaya huruf terang (*burned-in keywords & dynamic colors*) untuk diluncurkan secara otomatis maupun terjadwal langsung ke panggung *YouTube Shorts* milik kreator dari dasbor kendali.
+- **Senior Video Editor Prompting (Llama 3.3 70B):** The LLM acts as the sole decision-maker. The model receives professional editor instructions to hunt for *viral hooks*, parsing sequential long-form content into highly marketable independent subtopics (30–180 seconds) graded with a virality score from 1 to 100.
+- **Sentence-Aware Smart Chunking (Saves up to 97% Tokens):** To handle very long videos without hallucination risks or JSON truncation, transcripts are divided into balanced 10-minute blocks (600 seconds) that are **forbidden from cutting mid-sentence**. The system clock is strictly reset per block so a 35+ minute video only requires ~4 network calls (consuming a mere ~4,000 tokens of the daily quota), making it highly efficient and fast.
+- **Pure-AI Quality Guarantee (Zero Dummy Fallback):** The AUVI system is strictly committed to pure AI analysis. If the API network disconnects or your daily token quota is entirely depleted, the system vehemently rejects generating "dummy" clips based on raw word-count estimations; instead, it immediately surfaces an open error message to maintain your content presentation integrity.
 
 ---
 
-### 🗂️ Struktur Direktori Proyek
+### 🔍 3. Post-LLM Semantic & Linguistic Validator Architecture
+
+AI often returns second-timestamps that slightly drift from the actual speech. To fix this, AUVI integrates a specialized post-lingual validation system (`semantic_validator.py`):
+
+- **Millisecond Word-Snap & Subtitle Anti-Overlap:** Perfects the LLM's second-level precision by snapping the *start_time* and *end_time* directly to the absolute word and punctuation (`.`, `!`, `?`) boundaries thanks to Groq Whisper API's word-level timestamps. The rendering engine also enforces a forced 0.05s *gap* between text to prevent subtitle overlaps.
+- **List & Question Completion Extension:** Contains bilingual linguistic intelligence (**Indonesian & English**). If the AI cuts a clip right before a list is fully uttered (*"There are 3 secrets..."*) or right after a hook question is left hanging (*"Why did it fail? Because..."*), the validator engine automatically expands the clip's duration until the concluding explanation is fully captured.
+- **Smart Trim 90s & Dangling Connector Elimination:** Eliminates the risk of videos getting cut off on dangling conjunctions (*"because...", "and..."*). If a clip's duration blows past the 90-second limit, the system doesn't perform a hard-cut; rather, it steps back carefully to find the nearest sentence boundary so the narrative remains intact. Includes clip merging (deduplication) for matching topics.
+
+---
+
+### 🌐 4. Cloud Database & Publishing Automation Architecture
+
+- **Supabase PostgreSQL Persistent Layer:** Execution flow metadata, clip performance history, virality scores, and user account data are organized using robust transactional database standards backed by Cloud PostgreSQL (Supabase).
+- **One-Click YouTube Shorts Automation:** Built-in **Google OAuth 2.0 API** authentication integration allows every high-accuracy clip—encapsulated with bright, burned-in TikTok-style subtitles—to be automatically or scheduledly launched directly to the creator's *YouTube Shorts* stage from the control dashboard.
+
+---
+
+### 🗂️ Project Directory Structure
 
 ```
 AUVI/
-├── README.md                   ← 📄 File ini (panduan & arsitektur lengkap)
-├── LICENSE                     ← 📜 Lisensi MIT
-├── package.json                ← 📦 Script shortcut (npm run dev, dll)
+├── README.md                   ← 📄 This file (comprehensive guide & architecture)
+├── LICENSE                     ← 📜 MIT License
+├── package.json                ← 📦 Shortcut scripts (npm run dev, etc.)
 │
-└── ai-clipper/                 ← 🗂️ Folder utama aplikasi
-    ├── .env                    ← 🔑 Konfigurasi Rahasia & API Key
-    ├── dev.py                  ← 🚀 Script terintegrasi pencucuk backend + frontend 
-    ├── docker-compose.yml      ← 🐳 Orchestrator Docker Container & Networking
-    ├── storage/                ← 💾 Penyimpanan isolasi berkas media asli & klip hasil
+└── ai-clipper/                 ← 🗂️ Main application folder
+    ├── .env                    ← 🔑 Secrets & API Key Configuration
+    ├── dev.py                  ← 🚀 Integrated script launching backend + frontend 
+    ├── docker-compose.yml      ← 🐳 Docker Container Orchestrator & Networking
+    ├── storage/                ← 💾 Isolated storage for original media & clips
     │
-    ├── backend/                ← ⚙️ Server Backend (Python/FastAPI)
-    │   ├── Dockerfile          ← Instruksi Kontainerisasi Service Backend
-    │   ├── main.py             ← Entry point — Inisialisasi Middleware FastAPI & CORS
-    │   ├── database.py         ← Engine konektor ORM PostgreSQL (Supabase / SQLite fallback)
-    │   ├── worker.py           ← ARQ Asynchronous Worker & Pipeline Pengolahan Antrean
-    │   ├── redis_client.py     ← Pengelola Koneksi & Manajemen Resiliency Upstash Redis
-    │   ├── requirements.txt    ← Dependensi Pustaka Python
+    ├── backend/                ← ⚙️ Backend Server (Python/FastAPI)
+    │   ├── Dockerfile          ← Backend Service Containerization Instructions
+    │   ├── main.py             ← Entry point — FastAPI Middleware & CORS init
+    │   ├── database.py         ← PostgreSQL ORM connector engine (Supabase / SQLite fallback)
+    │   ├── worker.py           ← ARQ Asynchronous Worker & Queue Pipeline
+    │   ├── redis_client.py     ← Connection Manager & Upstash Redis Resiliency
+    │   ├── requirements.txt    ← Python Library Dependencies
     │   ├── models/
     │   │   ├── __init__.py
-    │   │   └── schemas.py      ← Pydantic & SQLAlchemy ORM Models (Validasi Skema Data)
+    │   │   └── schemas.py      ← Pydantic & SQLAlchemy ORM Models
     │   ├── routers/
     │   │   ├── __init__.py
-    │   │   ├── process.py      ← Router API Proses Pipeline Job (Enqueue to ARQ Worker)
-    │   │   ├── upload.py       ← Router API Manajemen Unggahan Media Langsung
-    │   │   └── clips.py        ← Router API Ekstraksi Hasil, Streaming, & Otomasi Shorts
+    │   │   ├── process.py      ← Job Pipeline Process API Router
+    │   │   ├── upload.py       ← Direct Media Upload API Router
+    │   │   └── clips.py        ← Extraction, Streaming, & Shorts Automation API
     │   └── services/
     │       ├── __init__.py
-    │       ├── downloader.py       ← Ekstraktor Video & Audio Resolusi Tinggi via yt-dlp
-    │       ├── transcriber.py      ← Transkriptor Presisi Tinggi via Groq Whisper API (Word Level)
-    │       ├── analyzer.py         ← Senior Editor AI & Smart Chunking via Groq Llama 3.3 70B
-    │       ├── clipper.py          ← Komandan FFmpeg, Vertikal Crop 9:16 & Subtitle Burning
-    │       ├── clip_validator.py   ← Validator Karakteristik Fisik & Format Berkas Video
-    │       ├── semantic_validator.py ← Linguistic Engine (Pengecekan Narasi Utuh Dwibahasa)
-    │       └── youtube_api.py      ← Pengontrol Autentikasi Google OAuth 2.0 & Publishing
+    │       ├── downloader.py       ← High-Res Video/Audio Extractor (yt-dlp)
+    │       ├── transcriber.py      ← High-Precision Transcriber (Groq Whisper API)
+    │       ├── analyzer.py         ← Senior AI Editor & Smart Chunking (Llama 3.3 70B)
+    │       ├── clipper.py          ← FFmpeg Commander, 9:16 Crop & Subtitle Burning
+    │       ├── clip_validator.py   ← Physical File Format & Characteristics Validator
+    │       ├── semantic_validator.py ← Linguistic Engine (Bilingual Narrative Check)
+    │       └── youtube_api.py      ← Google OAuth 2.0 Controller & Publishing
     │
-    └── frontend/               ← 🎨 Antarmuka Pengguna (React/Vite)
-        ├── Dockerfile          ← Instruksi Kontainerisasi Web Frontend
-        ├── package.json        ← Dependensi & Ekosistem Pustaka Node.js
-        ├── vite.config.js      ← Konfigurasi Dev Server & Middleware Proxy
-        ├── tailwind.config.js  ← Desain Token & Tema Kustom TailwindCSS
-        ├── index.html          ← Halaman Kerangka Tumpuan Utama HTML
+    └── frontend/               ← 🎨 User Interface (React/Vite)
+        ├── Dockerfile          ← Web Frontend Containerization Instructions
+        ├── package.json        ← Node.js Ecosystem & Dependencies
+        ├── vite.config.js      ← Dev Server & Proxy Middleware Configuration
+        ├── tailwind.config.js  ← Custom TailwindCSS Theme & Design Tokens
+        ├── index.html          ← Main HTML Frame
         └── src/
-            ├── main.jsx        ← Inisialisator React & Virtual DOM Renderer
-            ├── App.jsx         ← Kontraktor Navigasi & Client-Side Routing
-            ├── index.css       ← Global Styling & Token Kosmetika Desain
+            ├── main.jsx        ← React Init & Virtual DOM Renderer
+            ├── App.jsx         ← Navigation Contractor & Client-Side Routing
+            ├── index.css       ← Global Styling & Design Tokens
             ├── pages/
-            │   ├── Home.jsx        ← Landing Page & Portal Masukkan URL / Upload Media
-            │   ├── Processing.jsx  ← Terminal Pemantauan Progress Live-Stream (SSE)
-            │   └── Dashboard.jsx   ← Pameran Hasil Analisis Klip & Publikasi
+            │   ├── Home.jsx        ← Landing Page & Media Input Portal
+            │   ├── Processing.jsx  ← Live-Stream Progress Terminal (SSE)
+            │   └── Dashboard.jsx   ← Clip Results Showcase & Publishing
             ├── components/
-            │   ├── UploadZone.jsx       ← Drop-Zone Unggahan Berkas Dinamis
-            │   ├── YouTubeInput.jsx     ← Validasi & Ekstraksi URL YouTube Web
-            │   ├── ProcessingSteps.jsx  ← Indikator Visual Animatif Tahapan AI
-            │   ├── ClipCard.jsx         ← Etalase Kartu Klip, Skor Viral, & Opsi YouTube
-            │   ├── ClipPreviewModal.jsx ← Pemutar Layar Penuh Pemutaran Hasil Potongan
-            │   ├── ClipTimeline.jsx     ← Navigator Rentang Waktu Visual dari Video Asli
-            │   ├── VideoPlayer.jsx      ← Pemutar Media Interaktif Bergaya Vertikal Modern
-            │   ├── CaptionOverlay.jsx   ← Simulator Animasi Subtitle TikTok Live
-            │   └── SettingsDrawer.jsx   ← Laci Pengontrol Bahasa & Ambang Batas Viral Skor
+            │   ├── UploadZone.jsx       ← Dynamic File Upload Drop-Zone
+            │   ├── YouTubeInput.jsx     ← YouTube Web URL Extractor & Validator
+            │   ├── ProcessingSteps.jsx  ← Animated Visual AI Stage Indicators
+            │   ├── ClipCard.jsx         ← Clip Showcase Card, Virality Score, & YT Options
+            │   ├── ClipPreviewModal.jsx ← Full-Screen Result Video Player Modal
+            │   ├── ClipTimeline.jsx     ← Visual Timeline Navigator
+            │   ├── VideoPlayer.jsx      ← Modern Vertical Media Player
+            │   ├── CaptionOverlay.jsx   ← Live TikTok Subtitle Animation Simulator
+            │   └── SettingsDrawer.jsx   ← Language & Viral Score Threshold Controls
             ├── store/
-            │   └── useClipStore.js  ← Manajemen State Global (Zustand Architecture)
+            │   └── useClipStore.js  ← Global State Management (Zustand Architecture)
             └── lib/
-                └── api.js           ← Engine Komunikasi API Asinkron & Interseptor
+                └── api.js           ← Async API Engine & Interceptors
 ```
 
-
 ---
 
-## Prasyarat Sistem
+## System Requirements
 
-Sebelum memulai, pastikan komputer kamu memenuhi persyaratan berikut:
+Before you begin, ensure your machine meets the following requirements:
 
-| Komponen | Minimum | Direkomendasikan |
+| Component | Minimum | Recommended |
 |----------|---------|------------------|
-| **Sistem Operasi** | Windows 10, macOS 10.15, Ubuntu 20.04 | Windows 11, macOS 14+, Ubuntu 22.04 |
-| **RAM** | 4 GB | 8 GB atau lebih |
-| **Penyimpanan** | 5 GB ruang kosong | 10 GB+ (untuk video besar) |
-| **Koneksi Internet** | Wajib | Stabil (untuk download video & API calls) |
+| **OS** | Windows 10, macOS 10.15, Ubuntu 20.04 | Windows 11, macOS 14+, Ubuntu 22.04 |
+| **RAM** | 4 GB | 8 GB or more |
+| **Storage** | 5 GB free space | 10 GB+ (for large videos) |
+| **Internet** | Required | Stable (for downloading videos & API calls) |
 
 ---
 
-## Panduan Instalasi Lokal (Tanpa Docker)
+## Local Installation Guide (Without Docker)
 
-> 💡 **Catatan:** Panduan ini untuk menjalankan aplikasi **langsung di komputermu** tanpa Docker. Cocok untuk yang ingin **memodifikasi kode** atau **belajar development**. Jika kamu hanya ingin menjalankan aplikasi tanpa ribet, lihat [Panduan dengan Docker](#panduan-instalasi-dengan-docker).
+> 💡 **Note:** This guide is for running the app **directly on your machine** without Docker. Ideal for those who want to **modify the code** or **learn development**. If you just want to run the app easily, see the [Docker Installation Guide](#docker-installation-guide).
 
-### Langkah 1 — Instal Python 3.11+
+### Step 1 — Install Python 3.11+
 
-Python digunakan untuk menjalankan backend (server API).
+Python is used to run the backend (API server).
 
 #### Windows:
 
-1. Buka [https://www.python.org/downloads/](https://www.python.org/downloads/)
-2. Klik tombol **"Download Python 3.1x.x"** (versi terbaru)
-3. **PENTING:** Saat installer terbuka, **centang ✅ "Add Python to PATH"** di bagian bawah!
-4. Klik **"Install Now"**
-5. Tunggu sampai selesai, lalu klik **"Close"**
+1. Visit [https://www.python.org/downloads/](https://www.python.org/downloads/)
+2. Click **"Download Python 3.1x.x"** (latest version)
+3. **CRITICAL:** When the installer opens, **check ✅ "Add Python to PATH"** at the bottom!
+4. Click **"Install Now"**
+5. Wait for it to finish, then click **"Close"**
 
 #### macOS:
 
 ```bash
-# Opsi 1: Download dari website
-# Buka https://www.python.org/downloads/ dan download installer .pkg
+# Option 1: Download from website
+# Visit https://www.python.org/downloads/ and download the .pkg installer
 
-# Opsi 2: Via Homebrew (jika sudah terinstal)
+# Option 2: Via Homebrew (if installed)
 brew install python@3.11
 ```
 
@@ -261,81 +260,81 @@ sudo apt update
 sudo apt install -y python3.11 python3.11-venv python3-pip
 ```
 
-#### ✅ Verifikasi:
+#### ✅ Verify:
 
-Buka **Terminal** (atau **PowerShell** di Windows) dan jalankan:
+Open **Terminal** (or **PowerShell** on Windows) and run:
 
 ```bash
 python --version
-# Harus menampilkan: Python 3.11.x atau lebih tinggi
+# Should output: Python 3.11.x or higher
 
-# Jika di Linux/macOS perintahnya mungkin:
+# If on Linux/macOS the command might be:
 python3 --version
 ```
 
-> ⚠️ **Jika `python` tidak ditemukan di Windows:**
-> - Pastikan kamu sudah mencentang "Add Python to PATH" saat instalasi
-> - Coba tutup dan buka ulang PowerShell
-> - Atau coba ketik `python3` sebagai gantinya
+> ⚠️ **If `python` is not found on Windows:**
+> - Ensure you checked "Add Python to PATH" during installation
+> - Try closing and reopening PowerShell
+> - Or try typing `python3` instead
 
 ---
 
-### Langkah 2 — Instal Node.js 20+
+### Step 2 — Install Node.js 20+
 
-Node.js digunakan untuk menjalankan frontend (antarmuka web).
+Node.js is used to run the frontend (web interface).
 
 #### Windows & macOS:
 
-1. Buka [https://nodejs.org/](https://nodejs.org/)
-2. Download versi **LTS** (Long Term Support) — yang berwarna hijau
-3. Jalankan installer dan ikuti langkah-langkahnya (klik **Next** terus)
-4. Selesai!
+1. Visit [https://nodejs.org/](https://nodejs.org/)
+2. Download the **LTS** (Long Term Support) version — the green button
+3. Run the installer and follow the steps (keep clicking **Next**)
+4. Done!
 
 #### Linux (Ubuntu/Debian):
 
 ```bash
-# Menggunakan NodeSource repository
+# Using NodeSource repository
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
-#### ✅ Verifikasi:
+#### ✅ Verify:
 
 ```bash
 node --version
-# Harus menampilkan: v20.x.x atau lebih tinggi
+# Should output: v20.x.x or higher
 
 npm --version
-# Harus menampilkan: 10.x.x atau lebih tinggi
+# Should output: 10.x.x or higher
 ```
 
 ---
 
-### Langkah 3 — Instal FFmpeg
+### Step 3 — Install FFmpeg
 
-FFmpeg digunakan oleh backend untuk memproses video (memotong, menambah subtitle, crop).
+FFmpeg is used by the backend to process video (clipping, burning subtitles, cropping).
 
 #### Windows:
 
-Ada beberapa cara. Cara **paling mudah** menggunakan `winget` (tersedia di Windows 10/11):
+The **easiest way** is using `winget` (available on Windows 10/11):
 
 ```powershell
 winget install Gyan.FFmpeg
 ```
 
-**Cara alternatif (manual):**
+**Alternative method (manual):**
 
-1. Buka [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
-2. Di bawah **"Windows"**, klik **"Windows builds from gyan.dev"**
-3. Download file **`ffmpeg-release-essentials.zip`**
-4. Ekstrak file ZIP ke lokasi permanen, misalnya `C:\ffmpeg\`
-5. **Tambahkan ke PATH:**
-   - Buka **Start Menu** → ketik **"Environment Variables"** → klik **"Edit the system environment variables"**
-   - Klik **"Environment Variables..."**
-   - Di bagian **"System variables"**, cari **"Path"** → klik **"Edit..."**
-   - Klik **"New"** → masukkan `C:\ffmpeg\bin`
-   - Klik **OK** di semua dialog
-6. **Tutup dan buka ulang PowerShell**
+1. Visit [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
+2. Under **"Windows"**, click **"Windows builds from gyan.dev"**
+3. Download the **`ffmpeg-release-essentials.zip`** file
+4. Extract the ZIP file to a permanent location, e.g., `C:\ffmpeg\`
+5. **Add to PATH:**
+   - Open **Start Menu** → type **"Environment Variables"** → click **"Edit the system environment variables"**
+   - Click **"Environment Variables..."**
+   - Under **"System variables"**, find **"Path"** → click **"Edit..."**
+   - Click **"New"** → enter `C:\ffmpeg\bin`
+   - Click **OK** on all dialogs
+6. **Close and reopen PowerShell**
 
 #### macOS:
 
@@ -350,32 +349,32 @@ sudo apt update
 sudo apt install -y ffmpeg
 ```
 
-#### ✅ Verifikasi:
+#### ✅ Verify:
 
 ```bash
 ffmpeg -version
-# Harus menampilkan informasi versi FFmpeg
+# Should output FFmpeg version information
 ```
 
 ---
 
-### Langkah 4 — Instal Git
+### Step 4 — Install Git
 
-Git digunakan untuk men-download (clone) kode sumber proyek ini dari GitHub.
+Git is used to download (clone) the project source code from GitHub.
 
 #### Windows:
 
-1. Buka [https://git-scm.com/downloads/win](https://git-scm.com/downloads/win)
-2. Download installer dan jalankan
-3. Ikuti wizard instalasi — **pilih semua opsi default** (klik **Next** terus sampai selesai)
+1. Visit [https://git-scm.com/downloads/win](https://git-scm.com/downloads/win)
+2. Download and run the installer
+3. Follow the installation wizard — **choose all default options** (keep clicking **Next**)
 
 #### macOS:
 
 ```bash
-# Git biasanya sudah terinstal. Verifikasi:
+# Git is usually pre-installed. Verify:
 git --version
 
-# Jika belum ada:
+# If not installed:
 brew install git
 ```
 
@@ -386,76 +385,76 @@ sudo apt update
 sudo apt install -y git
 ```
 
-#### ✅ Verifikasi:
+#### ✅ Verify:
 
 ```bash
 git --version
-# Harus menampilkan: git version 2.x.x
+# Should output: git version 2.x.x
 ```
 
 ---
 
-### Langkah 5 — Clone Repository
+### Step 5 — Clone Repository
 
-Sekarang kita download kode sumber AUVI dari GitHub.
+Now we download the AUVI source code from GitHub.
 
-Buka **Terminal** (atau **PowerShell** di Windows):
+Open **Terminal** (or **PowerShell** on Windows):
 
 ```bash
-# Pilih folder tempat kamu ingin menyimpan proyek
-# Contoh: di Desktop
+# Choose your target folder
+# Example: Desktop
 cd ~/Desktop
 
-# Clone repository dari GitHub
+# Clone the repository from GitHub
 git clone https://github.com/Alistaire-Q/AUVI.git
 
-# Masuk ke folder proyek
+# Enter the project folder
 cd AUVI
 ```
 
-> 💡 **Setelah clone berhasil**, kamu akan melihat folder `AUVI` di Desktop (atau di mana pun kamu menjalankan perintah `cd`).
+> 💡 **Once successful**, you will see an `AUVI` folder in your Desktop.
 
 ---
 
-### Langkah 6 — Dapatkan API Key Groq (GRATIS)
+### Step 6 — Get a Groq API Key (FREE)
 
-AUVI menggunakan **Groq API** untuk dua hal:
-- **Transkripsi audio** → Groq Whisper API
-- **Analisis konten** → Llama 3.3 70B via Groq
+AUVI uses the **Groq API** for two things:
+- **Audio Transcription** → Groq Whisper API
+- **Content Analysis** → Llama 3.3 70B via Groq
 
-API Key ini **100% gratis** dan memiliki kuota yang cukup besar.
+This API Key is **100% free** and has a generous quota.
 
-#### Cara Mendapatkan:
+#### How to get one:
 
-1. Buka [https://console.groq.com](https://console.groq.com)
-2. **Daftar akun** — bisa login menggunakan **Google**, **GitHub**, atau email
-3. Setelah masuk ke dashboard, klik **"API Keys"** di sidebar kiri
-4. Klik tombol **"Create API Key"**
-5. Beri nama (misalnya: `auvi`) dan klik **"Submit"**
-6. **SALIN API Key** yang muncul (formatnya dimulai dengan `gsk_...`)
+1. Go to [https://console.groq.com](https://console.groq.com)
+2. **Sign up** — you can use **Google**, **GitHub**, or email
+3. Once in the dashboard, click **"API Keys"** in the left sidebar
+4. Click the **"Create API Key"** button
+5. Give it a name (e.g., `auvi`) and click **"Submit"**
+6. **COPY the API Key** that appears (starts with `gsk_...`)
 
-> ⚠️ **PENTING:** API Key **hanya ditampilkan sekali**! Pastikan kamu menyalinnya dan menyimpannya di tempat yang aman sebelum menutup dialog.
+> ⚠️ **IMPORTANT:** The API Key is **only shown once**! Make sure to copy and save it securely before closing the dialog.
 
 ---
 
-### Langkah 7 — Konfigurasi File .env
+### Step 7 — Configure .env File
 
-File `.env` berisi konfigurasi rahasia (API Key) yang dibutuhkan oleh backend.
+The `.env` file holds the secret configurations (API Key) required by the backend.
 
-#### Buat file `.env` di dalam folder `ai-clipper/`:
+#### Create a `.env` file inside the `ai-clipper/` folder:
 
 **Windows (PowerShell):**
 
 ```powershell
-# Pastikan kamu berada di folder AUVI
-# Buat file .env di dalam folder ai-clipper
+# Make sure you are in the AUVI folder
+# Create the .env file in the ai-clipper folder
 @"
 # AUVI Configuration
 # Get free API key at: https://console.groq.com
-GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+GROQ_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 
-# LLM API Key (bisa sama dengan GROQ_API_KEY)
-LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+# LLM API Key (can be the same as GROQ_API_KEY)
+LLM_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 "@ | Out-File -FilePath "ai-clipper\.env" -Encoding UTF8
 ```
 
@@ -465,39 +464,39 @@ LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
 cat > ai-clipper/.env << 'EOF'
 # AUVI Configuration
 # Get free API key at: https://console.groq.com
-GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+GROQ_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 
-# LLM API Key (bisa sama dengan GROQ_API_KEY)
-LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+# LLM API Key (can be the same as GROQ_API_KEY)
+LLM_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 EOF
 ```
 
-**Atau cara manual dengan text editor:**
+**Or manually via a text editor:**
 
-1. Buka **Notepad** (Windows), **TextEdit** (macOS), atau editor apapun
-2. Ketik isi berikut:
+1. Open **Notepad** (Windows), **TextEdit** (macOS), or any editor
+2. Type the following:
 
 ```env
 # AUVI Configuration
-GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
-LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+GROQ_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
+LLM_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 ```
 
-3. Simpan file dengan nama `.env` (perhatikan titik di awal!) di dalam folder `ai-clipper/`
+3. Save the file as `.env` (don't forget the dot!) inside the `ai-clipper/` folder
 
-> ⚠️ **PENTING:** Ganti `gsk_PASTE_API_KEY_KAMU_DISINI` dengan API Key yang sudah kamu salin dari Langkah 6!
+> ⚠️ **IMPORTANT:** Replace `gsk_PASTE_YOUR_API_KEY_HERE` with the API Key you copied in Step 6!
 
-#### Konfigurasi Full (Template Opsional & Lanjutan):
+#### Full Configuration (Optional & Advanced Template):
 
-Jika Anda menggunakan Docker, Supabase, Google OAuth, atau Upstash Redis, Anda dapat menggunakan *template* penuh berikut untuk file `.env` Anda:
+If you are using Docker, Supabase, Google OAuth, or Upstash Redis, you can use the following full template for your `.env` file:
 
 ```env
 # AUVI Configuration
 # Get free API key at: https://console.groq.com
-GROQ_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+GROQ_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 
 # LLM API Key (used by analyzer.py - falls back to GROQ_API_KEY if not set)
-LLM_API_KEY=gsk_PASTE_API_KEY_KAMU_DISINI
+LLM_API_KEY=gsk_PASTE_YOUR_API_KEY_HERE
 
 # LLM Configuration (optional - defaults to Groq llama-3.3-70b-versatile)
 # LLM_BASE_URL=https://api.groq.com/openai/v1
@@ -530,20 +529,20 @@ REDIS_SSL=true
 
 ---
 
-### Langkah 8 — Instal Dependensi Backend (Python)
+### Step 8 — Install Backend Dependencies (Python)
 
-Sekarang kita instal semua library Python yang dibutuhkan oleh backend.
+Now we install all the Python libraries required by the backend.
 
 ```bash
-# Pastikan kamu berada di folder AUVI (root proyek)
+# Make sure you are in the AUVI root folder
 
-# Masuk ke folder backend
+# Go to the backend folder
 cd ai-clipper/backend
 
-# (DIREKOMENDASIKAN) Buat virtual environment agar tidak mengganggu Python sistem
+# (RECOMMENDED) Create a virtual environment to avoid polluting system Python
 python -m venv .venv
 
-# Aktifkan virtual environment:
+# Activate the virtual environment:
 
 # ► Windows (PowerShell):
 .venv\Scripts\activate
@@ -554,243 +553,243 @@ python -m venv .venv
 # ► macOS / Linux:
 source .venv/bin/activate
 
-# Setelah aktif, prompt terminal akan berubah menjadi:
-# (.venv) PS C:\...\backend>   ← di Windows
-# (.venv) user@pc:~/backend$  ← di Linux/macOS
+# Once activated, your terminal prompt will change to:
+# (.venv) PS C:\...\backend>   ← on Windows
+# (.venv) user@pc:~/backend$  ← on Linux/macOS
 ```
 
-> ⚠️ **Jika di Windows muncul error "running scripts is disabled":**
-> Jalankan perintah ini dulu di PowerShell (sebagai Administrator):
+> ⚠️ **If Windows shows an error "running scripts is disabled":**
+> Run this command first in PowerShell (as Administrator):
 > ```powershell
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
-> Lalu coba aktifkan virtual environment lagi.
+> Then try activating the virtual environment again.
 
 ```bash
-# Upgrade pip ke versi terbaru
+# Upgrade pip to the latest version
 pip install --upgrade pip
 
-# Instal semua dependensi dari requirements.txt
+# Install all dependencies from requirements.txt
 pip install -r requirements.txt
 ```
 
-**Daftar dependensi yang akan terinstal:**
+**List of dependencies installed:**
 
-| Package | Fungsi |
+| Package | Function |
 |---------|--------|
-| `fastapi` | Web framework untuk API |
-| `uvicorn` | ASGI server untuk menjalankan FastAPI |
-| `yt-dlp` | Download video dari YouTube |
-| `ffmpeg-python` | Python wrapper untuk FFmpeg |
-| `httpx` | HTTP client (untuk panggil Groq API) |
-| `pydub` | Manipulasi audio |
+| `fastapi` | Web framework for the API |
+| `uvicorn` | ASGI server to run FastAPI |
+| `yt-dlp` | Download videos from YouTube |
+| `ffmpeg-python` | Python wrapper for FFmpeg |
+| `httpx` | HTTP client (for Groq API calls) |
+| `pydub` | Audio manipulation |
 | `opencv-python-headless` | Computer vision (face tracking) |
-| `python-multipart` | Handle file upload |
+| `python-multipart` | Handle file uploads |
 | `aiofiles` | Async file operations |
-| `sse-starlette` | Server-Sent Events (progress real-time) |
-| `sqlalchemy` | ORM database (SQLite) |
-| `pydantic` | Validasi data |
-| `python-dotenv` | Baca file .env |
+| `sse-starlette` | Server-Sent Events (real-time progress) |
+| `sqlalchemy` | Database ORM (SQLite) |
+| `pydantic` | Data validation |
+| `python-dotenv` | Read .env files |
 
 ```bash
-# Kembali ke folder root AUVI
+# Return to the AUVI root folder
 cd ../..
 ```
 
 ---
 
-### Langkah 9 — Instal Dependensi Frontend (Node.js)
+### Step 9 — Install Frontend Dependencies (Node.js)
 
-Sekarang kita instal semua library JavaScript yang dibutuhkan oleh frontend.
+Now we install all the JavaScript libraries needed for the frontend.
 
 ```bash
-# Masuk ke folder frontend
+# Go to the frontend folder
 cd ai-clipper/frontend
 
-# Instal semua dependensi dari package.json
+# Install dependencies from package.json
 npm install
 ```
 
-Proses ini akan membuat folder `node_modules/` dan mengunduh semua package yang diperlukan. Mungkin memerlukan waktu **1-3 menit** tergantung kecepatan internet.
+This will create a `node_modules/` folder and download necessary packages. It takes about **1-3 minutes** depending on your internet speed.
 
-**Daftar dependensi utama yang akan terinstal:**
+**List of main dependencies installed:**
 
-| Package | Fungsi |
+| Package | Function |
 |---------|--------|
-| `react` | Library UI |
-| `react-dom` | React renderer untuk browser |
-| `react-router-dom` | Routing antar halaman |
-| `axios` | HTTP client (panggil API backend) |
-| `zustand` | State management (ringan & simpel) |
-| `framer-motion` | Animasi & transisi |
+| `react` | UI Library |
+| `react-dom` | React renderer for browsers |
+| `react-router-dom` | Page routing |
+| `axios` | HTTP client (calls backend APIs) |
+| `zustand` | State management (lightweight) |
+| `framer-motion` | Animations & transitions |
 | `lucide-react` | Icon library |
-| `react-player` | Pemutar video |
+| `react-player` | Video player |
 
 ```bash
-# Kembali ke folder root AUVI
+# Return to the AUVI root folder
 cd ../..
 ```
 
 ---
 
-### Langkah 10 — Jalankan Aplikasi
+### Step 10 — Run the Application
 
-Ada **dua cara** untuk menjalankan aplikasi:
+There are **two ways** to run the application:
 
-#### Cara 1: Menggunakan Script `dev.py` (Direkomendasikan ⭐)
+#### Method 1: Using the `dev.py` Script (Recommended ⭐)
 
-Script ini menjalankan **backend dan frontend bersamaan** dalam satu terminal.
+This script runs **both backend and frontend** in a single terminal.
 
 ```bash
-# Pastikan kamu berada di folder AUVI (root proyek)
+# Ensure you are in the AUVI root folder
 
-# Jalankan dev server
+# Run the dev server
 python ai-clipper/dev.py
 ```
 
-> 💡 Script `dev.py` akan:
-> - Memeriksa apakah FFmpeg terinstal
-> - Memuat file `.env` secara otomatis
-> - Menjalankan backend (FastAPI) di port **8000**
-> - Menjalankan frontend (Vite) di port **5173**
-> - Menampilkan log dari kedua server dengan warna berbeda
+> 💡 The `dev.py` script will:
+> - Check if FFmpeg is installed
+> - Automatically load the `.env` file
+> - Run the backend (FastAPI) on port **8000**
+> - Run the frontend (Vite) on port **5173**
+> - Display logs from both servers in distinct colors
 
-#### Cara 2: Jalankan Backend dan Frontend Terpisah
+#### Method 2: Run Backend and Frontend Separately
 
-Kamu perlu membuka **dua terminal terpisah**.
+You need to open **two separate terminals**.
 
 **Terminal 1 — Backend:**
 
 ```bash
-# Masuk ke folder backend
+# Go to backend folder
 cd ai-clipper/backend
 
-# Aktifkan virtual environment (jika belum)
+# Activate the virtual environment
 # Windows:
 .venv\Scripts\activate
 # macOS/Linux:
 source .venv/bin/activate
 
-# Set environment variable (jika belum pakai .env)
+# Set environment variable (if not using .env)
 # Windows PowerShell:
-$env:GROQ_API_KEY="gsk_API_KEY_KAMU"
+$env:GROQ_API_KEY="gsk_YOUR_API_KEY"
 # macOS/Linux:
-export GROQ_API_KEY="gsk_API_KEY_KAMU"
+export GROQ_API_KEY="gsk_YOUR_API_KEY"
 
-# Jalankan backend server
+# Run the backend server
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Terminal 2 — Frontend:**
 
 ```bash
-# Masuk ke folder frontend
+# Go to frontend folder
 cd ai-clipper/frontend
 
-# Jalankan development server
+# Run the development server
 npm run dev
 ```
 
-#### ✅ Verifikasi Aplikasi Berjalan:
+#### ✅ Verify the Application is Running:
 
-| Layanan | URL | Keterangan |
+| Service | URL | Description |
 |---------|-----|------------|
-| 🎨 **Frontend** | [http://localhost:5173](http://localhost:5173) | Antarmuka pengguna |
-| ⚙️ **Backend API** | [http://localhost:8000](http://localhost:8000) | Response JSON `{"name":"AUVI API"}` |
-| 📄 **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI (dokumentasi API interaktif) |
+| 🎨 **Frontend** | [http://localhost:5173](http://localhost:5173) | User Interface |
+| ⚙️ **Backend API** | [http://localhost:8000](http://localhost:8000) | JSON Response `{"name":"AUVI API"}` |
+| 📄 **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI (Interactive API documentation) |
 | 💚 **Health Check** | [http://localhost:8000/health](http://localhost:8000/health) | Response `{"status":"healthy"}` |
 
-Buka browser dan akses [http://localhost:5173](http://localhost:5173) — kamu akan melihat halaman utama AUVI! 🎉
+Open your browser and visit [http://localhost:5173](http://localhost:5173) — you'll see the AUVI homepage! 🎉
 
 ---
 
-## Panduan Instalasi dengan Docker
+## Docker Installation Guide
 
-> 💡 **Docker** menjalankan seluruh aplikasi dalam container terisolasi, sehingga kamu **tidak perlu menginstal Python, Node.js, atau FFmpeg secara manual**. Cocok jika kamu hanya ingin **menggunakan** aplikasi tanpa modifikasi kode.
+> 💡 **Docker** runs the entire app inside isolated containers, meaning you **don't need to manually install Python, Node.js, or FFmpeg**. Ideal if you just want to **use** the app without modifying the code.
 
-### Langkah 1 — Instal Docker Desktop
+### Step 1 — Install Docker Desktop
 
 #### Windows:
 
-1. Buka [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
-2. Klik **"Download for Windows"**
-3. Jalankan file installer `Docker Desktop Installer.exe`
-4. Ikuti wizard instalasi — centang **"Use WSL 2 instead of Hyper-V"** jika diminta
-5. **Restart komputer** jika diminta
-6. Setelah restart, buka **Docker Desktop** dari Start Menu
-7. Tunggu sampai Docker Engine berstatus **"Running"** (ikon hijau di system tray)
+1. Visit [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+2. Click **"Download for Windows"**
+3. Run `Docker Desktop Installer.exe`
+4. Follow the wizard — check **"Use WSL 2 instead of Hyper-V"** if prompted
+5. **Restart your computer** if required
+6. Open **Docker Desktop** from the Start Menu
+7. Wait until the Docker Engine is **"Running"** (green icon in the system tray)
 
 #### macOS:
 
-1. Buka [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
-2. Download versi yang sesuai: **Apple Silicon (M1/M2/M3/M4)** atau **Intel**
-3. Buka file `.dmg` dan drag **Docker** ke folder **Applications**
-4. Buka Docker dari **Launchpad** dan tunggu sampai berjalan
+1. Visit [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+2. Download the version for your Mac: **Apple Silicon (M1/M2/M3/M4)** or **Intel**
+3. Open the `.dmg` file and drag **Docker** to **Applications**
+4. Open Docker from **Launchpad** and wait for it to start
 
 #### Linux (Ubuntu/Debian):
 
 ```bash
-# Instal Docker Engine
+# Install Docker Engine
 curl -fsSL https://get.docker.com | sudo sh
 
-# Tambahkan user ke group docker (agar tidak perlu sudo)
+# Add user to docker group (no need for sudo)
 sudo usermod -aG docker $USER
 
-# Logout dan login kembali, lalu verifikasi
+# Logout and login back, then verify
 docker --version
 docker compose version
 ```
 
-#### ✅ Verifikasi Docker:
+#### ✅ Verify Docker:
 
 ```bash
 docker --version
-# Contoh output: Docker version 27.x.x
+# Example output: Docker version 27.x.x
 
 docker compose version
-# Contoh output: Docker Compose version v2.x.x
+# Example output: Docker Compose version v2.x.x
 ```
 
 ---
 
-### Langkah 2 — Clone & Konfigurasi
+### Step 2 — Clone & Configure
 
 ```bash
-# Clone repository (jika belum)
+# Clone the repository (if you haven't already)
 git clone https://github.com/Alistaire-Q/AUVI.git
 cd AUVI
 
-# Buat file .env (lihat Langkah 6 & 7 di panduan lokal)
-# Atau secara singkat:
-echo "GROQ_API_KEY=gsk_API_KEY_KAMU_DISINI" > ai-clipper/.env
-echo "LLM_API_KEY=gsk_API_KEY_KAMU_DISINI" >> ai-clipper/.env
+# Create a .env file (see Steps 6 & 7 in local guide)
+# Quick command:
+echo "GROQ_API_KEY=gsk_YOUR_API_KEY_HERE" > ai-clipper/.env
+echo "LLM_API_KEY=gsk_YOUR_API_KEY_HERE" >> ai-clipper/.env
 ```
 
 ---
 
-### Langkah 3 — Jalankan dengan Docker Compose
+### Step 3 — Run with Docker Compose
 
 ```bash
-# Masuk ke folder ai-clipper
+# Go to ai-clipper folder
 cd ai-clipper
 
-# Build dan jalankan semua container
+# Build and run all containers
 docker compose up --build -d
 ```
 
-**Penjelasan flag:**
-- `--build` → Membangun Docker image dari kode sumber
-- `-d` → Menjalankan di background (detached mode)
+**Flags explanation:**
+- `--build` → Builds the Docker image from source code
+- `-d` → Runs in detached mode (background)
 
-> ⏳ **Build pertama kali memerlukan waktu 3–10 menit** karena Docker harus mengunduh base image (Python, Node.js) dan menginstal semua dependensi. Build selanjutnya akan jauh lebih cepat karena menggunakan cache.
+> ⏳ **The first build takes about 3–10 minutes** because Docker downloads the base images (Python, Node.js) and installs dependencies. Subsequent builds are extremely fast due to caching.
 
-#### ✅ Verifikasi Container Berjalan:
+#### ✅ Verify Containers are Running:
 
 ```bash
 docker compose ps
 ```
 
-Kamu harus melihat **2 container** dengan status **"Up"**:
+You should see **2 containers** with status **"Up"**:
 
 ```
 NAME             IMAGE               STATUS          PORTS
@@ -798,181 +797,180 @@ auvi-backend     ai-clipper-backend   Up             0.0.0.0:8000->8000/tcp
 auvi-frontend    ai-clipper-frontend  Up             0.0.0.0:5173->5173/tcp
 ```
 
-Buka [http://localhost:5173](http://localhost:5173) di browser! 🎉
+Visit [http://localhost:5173](http://localhost:5173) in your browser! 🎉
 
 ---
 
-## Cara Menggunakan Aplikasi
+## How to Use the Application
 
-Setelah aplikasi berjalan (baik lokal maupun via Docker):
+Once the application is running (locally or via Docker):
 
-### 1. Buka Aplikasi
+### 1. Open the App
 
-Buka browser dan akses: [http://localhost:5173](http://localhost:5173)
+Open your browser and navigate to: [http://localhost:5173](http://localhost:5173)
 
-### 2. Pilih Sumber Video
+### 2. Select Video Source
 
-Kamu punya **dua opsi**:
+You have **two options**:
 
-| Opsi | Cara |
+| Option | How to |
 |------|------|
-| **YouTube URL** | Tempelkan link YouTube di input field, contoh: `https://www.youtube.com/watch?v=xxxxx` |
-| **Upload File** | Drag-and-drop file video ke area upload, atau klik untuk memilih file |
+| **YouTube URL** | Paste a YouTube link in the input field, e.g., `https://www.youtube.com/watch?v=xxxxx` |
+| **Upload File** | Drag and drop a video file into the upload zone, or click to select |
 
-### 3. Klik "Process"
+### 3. Click "Process"
 
-Klik tombol untuk memulai pemrosesan. Aplikasi akan:
+Click the button to start processing. The app will:
 
-1. 📥 **Download** — Mengunduh video dari YouTube (atau menerima file upload)
-2. 🎙️ **Transkripsi** — Mengirim audio ke Groq Whisper API untuk mendapatkan teks + timestamp
-3. 🧠 **Analisis** — AI (Llama 3.3 70B) menganalisis transkrip dan memilih segmen viral
-4. ✂️ **Potong** — FFmpeg memotong video, menambah crop 9:16 + subtitle
+1. 📥 **Download** — Fetch the video from YouTube (or process your uploaded file)
+2. 🎙️ **Transcribe** — Send audio to the Groq Whisper API for text + timestamps
+3. 🧠 **Analyze** — AI (Llama 3.3 70B) analyzes the transcript and selects viral segments
+4. ✂️ **Clip** — FFmpeg clips the video, adds a 9:16 crop + subtitles
 
-### 4. Pantau Progress
+### 4. Track Progress
 
-Halaman **Processing** akan menampilkan progress real-time untuk setiap tahap.
+The **Processing** page shows real-time progress for each stage.
 
-### 5. Download Hasil
+### 5. Download Results
 
-Setelah selesai, kamu akan diarahkan ke **Dashboard** yang menampilkan semua klip yang dihasilkan. Kamu bisa:
-- **Preview** setiap klip langsung di browser
-- **Download** klip ke komputermu
+Once finished, you will be redirected to the **Dashboard** displaying all generated clips. You can:
+- **Preview** each clip directly in the browser
+- **Download** clips to your computer
 
 ---
 
-## Menghentikan & Menjalankan Ulang
+## Stopping & Restarting
 
-### Mode Lokal (Tanpa Docker):
+### Local Mode (Without Docker):
 
 ```bash
-# Tekan Ctrl+C di terminal untuk menghentikan server
-# (baik dev.py maupun terminal terpisah)
+# Press Ctrl+C in the terminal to stop the servers
 
-# Untuk menjalankan ulang:
+# To run again:
 python ai-clipper/dev.py
 ```
 
-### Mode Docker:
+### Docker Mode:
 
 ```bash
-# Menghentikan semua container
+# Stop all containers
 docker compose down
 
-# Menjalankan ulang (tanpa rebuild — cepat)
+# Run again (no rebuild — fast)
 docker compose up -d
 
-# Menjalankan ulang DENGAN rebuild (setelah ada perubahan kode)
+# Run with a rebuild (if code changed)
 docker compose up --build -d
 
-# Melihat log backend secara real-time
+# View backend logs in real-time
 docker logs -f auvi-backend
 
-# Melihat log frontend secara real-time
+# View frontend logs in real-time
 docker logs -f auvi-frontend
 ```
 
 ---
 
-## Konfigurasi Lanjutan (Opsional)
+## Advanced Configuration (Optional)
 
-### Menggunakan Provider LLM Lain
+### Using Another LLM Provider
 
-Secara default, AUVI menggunakan Groq sebagai provider. Kamu bisa mengganti dengan provider lain yang kompatibel dengan OpenAI API:
+By default, AUVI uses Groq. You can switch to any provider compatible with the OpenAI API:
 
 ```env
-# Contoh: menggunakan OpenAI langsung
+# Example: using direct OpenAI
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=gpt-4o
 LLM_API_KEY=sk-xxxxxxxxxxxxxxxx
 
-# Contoh: menggunakan Ollama (lokal)
+# Example: using Ollama (local)
 LLM_BASE_URL=http://localhost:11434/v1
 LLM_MODEL=llama3
 LLM_API_KEY=ollama
 ```
 
-### Mengubah Port
+### Changing Ports
 
-**Mode Lokal:** Edit `vite.config.js` (frontend) atau ubah flag `--port` pada perintah uvicorn (backend).
+**Local Mode:** Edit `vite.config.js` (frontend) or change the `--port` flag on the uvicorn command (backend).
 
-**Mode Docker:** Edit `docker-compose.yml`:
+**Docker Mode:** Edit `docker-compose.yml`:
 
 ```yaml
 services:
   backend:
     ports:
-      - "9000:8000"  # Ubah 8000 ke port yang diinginkan
+      - "9000:8000"  # Change 8000 to your desired port
   frontend:
     ports:
-      - "3000:5173"  # Ubah 5173 ke port yang diinginkan
+      - "3000:5173"  # Change 5173 to your desired port
 ```
 
-### Mengubah Lokasi Penyimpanan
+### Changing Storage Location
 
 ```env
-# Di file .env
-STORAGE_PATH=/path/ke/folder/penyimpanan/kamu
+# Inside your .env file
+STORAGE_PATH=/path/to/your/storage/folder
 ```
 
 ---
 
-## Troubleshooting — Solusi Masalah Umum
+## Troubleshooting — Common Issues
 
-### ❌ `python` atau `python3` tidak ditemukan
+### ❌ `python` or `python3` not found
 
-**Penyebab:** Python belum terinstal atau belum ditambahkan ke PATH.
+**Cause:** Python is not installed or not added to PATH.
 
-**Solusi:**
-- **Windows:** Instal ulang Python dan **pastikan mencentang "Add Python to PATH"**
-- **Linux:** Coba `python3` instead of `python`. Instal dengan `sudo apt install python3`
+**Solution:**
+- **Windows:** Reinstall Python and **ensure you check "Add Python to PATH"**
+- **Linux:** Try `python3` instead of `python`. Install with `sudo apt install python3`
 
 ---
 
 ### ❌ `GROQ_API_KEY variable is not set`
 
-**Penyebab:** File `.env` tidak ditemukan atau API Key belum diisi.
+**Cause:** The `.env` file is missing or the API Key is empty.
 
-**Solusi:**
-1. Pastikan file `.env` ada di folder `ai-clipper/` (bukan di `ai-clipper/backend/`)
-2. Pastikan isinya benar: `GROQ_API_KEY=gsk_xxxxx` (tanpa spasi di sekitar `=`)
-3. Jika menjalankan manual (tanpa dev.py), set environment variable langsung:
+**Solution:**
+1. Ensure the `.env` file is inside the `ai-clipper/` folder (not in `ai-clipper/backend/`)
+2. Ensure the content is exactly: `GROQ_API_KEY=gsk_xxxxx` (no spaces around `=`)
+3. If running manually (without dev.py), export the environment variable:
    ```powershell
    # Windows PowerShell:
-   $env:GROQ_API_KEY="gsk_API_KEY_KAMU"
+   $env:GROQ_API_KEY="gsk_YOUR_API_KEY"
    ```
 
 ---
 
-### ❌ `ffmpeg: command not found` atau `ffmpeg is not recognized`
+### ❌ `ffmpeg: command not found` or `ffmpeg is not recognized`
 
-**Penyebab:** FFmpeg belum terinstal atau belum ditambahkan ke PATH.
+**Cause:** FFmpeg is not installed or not in PATH.
 
-**Solusi:**
-- **Windows:** Instal via `winget install Gyan.FFmpeg` atau ikuti langkah manual di atas
+**Solution:**
+- **Windows:** Install via `winget install Gyan.FFmpeg` or follow the manual steps above
 - **macOS:** `brew install ffmpeg`
 - **Linux:** `sudo apt install ffmpeg`
-- Pastikan **tutup dan buka ulang terminal** setelah instalasi
+- Make sure to **close and reopen your terminal** after installing
 
 ---
 
 ### ❌ `npm: command not found`
 
-**Penyebab:** Node.js belum terinstal.
+**Cause:** Node.js is not installed.
 
-**Solusi:** Instal Node.js dari [nodejs.org](https://nodejs.org/) (pilih versi LTS)
+**Solution:** Install Node.js from [nodejs.org](https://nodejs.org/) (choose LTS version).
 
 ---
 
 ### ❌ `Error: Cannot find module 'xxx'`
 
-**Penyebab:** Dependensi belum terinstal.
+**Cause:** Dependencies are not installed.
 
-**Solusi:**
+**Solution:**
 ```bash
-# Untuk frontend:
+# For frontend:
 cd ai-clipper/frontend && npm install
 
-# Untuk backend:
+# For backend:
 cd ai-clipper/backend && pip install -r requirements.txt
 ```
 
@@ -980,21 +978,21 @@ cd ai-clipper/backend && pip install -r requirements.txt
 
 ### ❌ `Download failed: ERROR: Requested format is not available`
 
-**Penyebab:** yt-dlp memerlukan JavaScript runtime (Deno) untuk mendekode format YouTube terbaru.
+**Cause:** yt-dlp requires a JavaScript runtime (Deno) to decode the newest YouTube formats.
 
-**Solusi (mode lokal):**
+**Solution (local mode):**
 ```bash
-# Update yt-dlp ke versi terbaru
+# Update yt-dlp
 pip install --upgrade yt-dlp
 
-# Instal Deno (JavaScript runtime)
+# Install Deno (JavaScript runtime)
 # Windows:
 irm https://deno.land/install.ps1 | iex
 # macOS/Linux:
 curl -fsSL https://deno.land/install.sh | sh
 ```
 
-**Solusi (mode Docker):** Deno sudah terinstal di dalam container. Rebuild image:
+**Solution (Docker mode):** Deno is already installed in the container. Simply rebuild the image:
 ```bash
 docker compose down
 docker compose up --build -d
@@ -1004,25 +1002,25 @@ docker compose up --build -d
 
 ### ❌ `Request failed with status code 500`
 
-**Penyebab:** Error internal di backend.
+**Cause:** Internal backend error.
 
-**Solusi:** Cek log backend untuk detail:
+**Solution:** Check the backend logs for details:
 ```bash
-# Mode lokal: lihat terminal backend
+# Local mode: look at your backend terminal
 
-# Mode Docker:
+# Docker mode:
 docker logs auvi-backend --tail 100
 ```
 
 ---
 
-### ❌ Port sudah digunakan (`port already in use`)
+### ❌ Port already in use
 
-**Penyebab:** Aplikasi lain sudah menggunakan port 5173 atau 8000.
+**Cause:** Another application is using port 5173 or 8000.
 
-**Solusi:**
+**Solution:**
 ```bash
-# Cek apa yang menggunakan port tersebut:
+# Check what is using the port:
 # Windows:
 netstat -ano | findstr :8000
 netstat -ano | findstr :5173
@@ -1031,85 +1029,85 @@ netstat -ano | findstr :5173
 lsof -i :8000
 lsof -i :5173
 
-# Hentikan proses tersebut, atau ubah port di konfigurasi
+# Stop that process or change ports in configuration
 ```
 
 ---
 
 ### ❌ `running scripts is disabled on this system` (Windows PowerShell)
 
-**Penyebab:** Policy PowerShell memblokir eksekusi script.
+**Cause:** PowerShell Execution Policy is blocking scripts.
 
-**Solusi:**
+**Solution:**
 ```powershell
-# Jalankan sebagai Administrator:
+# Run as Administrator:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ---
 
-### ❌ Docker build sangat lambat
+### ❌ Docker build is very slow
 
-**Penyebab:** Build pertama memang lambat karena mengunduh base image (~1 GB).
+**Cause:** The first build takes time because it downloads base images (~1 GB).
 
-**Solusi:** Ini normal untuk build pertama. Build selanjutnya akan menggunakan cache dan jauh lebih cepat. Pastikan koneksi internet stabil.
+**Solution:** This is completely normal for the first build. Future builds use cached layers and will be much faster. Ensure you have a stable internet connection.
 
 ---
 
-## Penjelasan Teknologi yang Digunakan
+## Technologies Used
 
-| Teknologi | Kategori | Penjelasan |
+| Technology | Category | Description |
 |-----------|----------|------------|
-| **Python 3.11** | Bahasa | Bahasa pemrograman backend |
-| **FastAPI** | Backend Framework | Framework web modern & cepat untuk Python, auto-generate API docs |
-| **Uvicorn** | Server | ASGI server untuk menjalankan FastAPI |
-| **yt-dlp** | Tool | Download video dari YouTube dan platform lain |
-| **FFmpeg** | Tool | Swiss army knife untuk pemrosesan video/audio |
-| **OpenCV** | Library | Computer vision untuk face detection/tracking |
-| **Groq Whisper API** | AI Service | Transkripsi audio menjadi teks dengan timestamp |
-| **Llama 3.3 70B** | AI Model | Model bahasa besar untuk analisis konten |
-| **SQLite** | Database | Database ringan untuk tracking job/status |
-| **SQLAlchemy** | ORM | Object-Relational Mapping untuk Python |
-| **React 18** | Frontend Framework | Library untuk membangun UI interaktif |
-| **Vite** | Build Tool | Dev server & bundler yang sangat cepat |
-| **TailwindCSS** | CSS Framework | Utility-first CSS framework |
-| **Zustand** | State Management | State management ringan untuk React |
-| **Axios** | HTTP Client | Library untuk HTTP requests dari frontend |
-| **Framer Motion** | Animasi | Library animasi untuk React |
-| **React Router** | Routing | Navigasi antar halaman di React |
-| **Docker** | Containerization | Menjalankan aplikasi di environment terisolasi |
+| **Python 3.11** | Language | Backend programming language |
+| **FastAPI** | Backend Framework | Modern, fast web framework for Python with auto-generated API docs |
+| **Uvicorn** | Server | ASGI server to run FastAPI |
+| **yt-dlp** | Tool | Downloads videos from YouTube and other platforms |
+| **FFmpeg** | Tool | The swiss army knife for video/audio processing |
+| **OpenCV** | Library | Computer vision for face detection & tracking |
+| **Groq Whisper API** | AI Service | Transcribes audio into text with timestamps |
+| **Llama 3.3 70B** | AI Model | Large Language Model for content analysis & hook detection |
+| **SQLite** | Database | Lightweight database for job/status tracking |
+| **SQLAlchemy** | ORM | Object-Relational Mapping for Python |
+| **React 18** | Frontend Framework | UI library for building interactive interfaces |
+| **Vite** | Build Tool | Extremely fast development server & bundler |
+| **TailwindCSS** | CSS Framework | Utility-first CSS styling framework |
+| **Zustand** | State Management | Lightweight state management for React |
+| **Axios** | HTTP Client | Library for making HTTP requests from the frontend |
+| **Framer Motion** | Animation | Animation library for React |
+| **React Router** | Routing | Inter-page navigation in React |
+| **Docker** | Containerization | Runs the application in isolated environments |
 
 ---
 
-## Contributing (Berkontribusi)
+## Contributing
 
-Kami sangat terbuka untuk kontribusi! Berikut cara berkontribusi:
+We are extremely open to contributions! Here's how you can contribute:
 
-1. **Fork** repository ini (klik tombol "Fork" di GitHub)
-2. **Clone** fork kamu:
+1. **Fork** this repository (click the "Fork" button on GitHub)
+2. **Clone** your fork:
    ```bash
-   git clone https://github.com/USERNAME_KAMU/AUVI.git
+   git clone https://github.com/YOUR_USERNAME/AUVI.git
    ```
-3. Buat **branch** baru:
+3. Create a new **branch**:
    ```bash
-   git checkout -b fitur-baru
+   git checkout -b new-feature
    ```
-4. Lakukan perubahan dan **commit**:
+4. Make your changes and **commit**:
    ```bash
    git add .
-   git commit -m "Menambahkan fitur X"
+   git commit -m "Add new feature X"
    ```
-5. **Push** ke branch:
+5. **Push** to the branch:
    ```bash
-   git push origin fitur-baru
+   git push origin new-feature
    ```
-6. Buat **Pull Request** di GitHub
+6. Open a **Pull Request** on GitHub
 
 ---
 
-## Lisensi
+## License
 
-Proyek ini dilisensikan di bawah **MIT License** — lihat file [LICENSE](LICENSE) untuk detail.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ```
 MIT License
@@ -1120,6 +1118,6 @@ Copyright (c) 2026 Olly
 
 <div align="center">
 
-*Selamat memotong video! 🎬✨*
+*Happy Clipping! 🎬✨*
 
 </div>
