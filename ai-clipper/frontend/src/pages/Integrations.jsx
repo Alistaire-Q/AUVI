@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Youtube, Settings as SettingsIcon, CheckCircle2, AlertCircle } from 'lucide-react';
 import PreferencesModal from '../components/PreferencesModal';
+import Logo from '../components/Logo';
 import useClipStore from '../store/useClipStore';
 
 export default function Integrations() {
@@ -38,10 +39,7 @@ export default function Integrations() {
       <header className="sticky top-0 z-50 w-full bg-base/80 backdrop-blur-md border-b border-border">
         <div className="w-full max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-text-primary rounded-lg flex items-center justify-center text-base font-bold text-sm tracking-tighter">
-              A
-            </div>
-            <span className="font-bold text-base tracking-wide text-text-primary">AUVI</span>
+            <Logo size={32} showWordmark={true} />
           </Link>
           
           <div className="flex items-center gap-5 ml-auto">

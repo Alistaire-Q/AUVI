@@ -1,3 +1,5 @@
+<p align="center"><img src="ai-clipper/frontend/public/logo.svg" width="128" /></p>
+
 # 🎬 AUVI — AI Video Clipper
 
 > Tool AI yang secara otomatis memotong video panjang menjadi klip pendek siap viral, lengkap dengan subtitle bergaya TikTok dan crop vertikal 9:16.

@@ -4,6 +4,7 @@ import { Settings, Link2, Upload, PlaySquare, Video, ArrowRight, Sparkles, Youtu
 import { Link, useNavigate } from 'react-router-dom';
 import SettingsDrawer from '../components/SettingsDrawer';
 import GenerateOptionsModal from '../components/GenerateOptionsModal';
+import Logo from '../components/Logo';
 import useClipStore from '../store/useClipStore';
 import { processUrl, uploadFile, getJobs } from '../lib/api';
 
@@ -101,10 +102,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 w-full bg-base/80 backdrop-blur-md border-b border-border">
         <div className="w-full max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-text-primary rounded-lg flex items-center justify-center text-base font-bold text-sm tracking-tighter">
-              A
-            </div>
-            <span className="font-bold text-base tracking-wide text-text-primary">AUVI</span>
+            <Logo size={32} showWordmark={true} />
           </div>
           
           <div className="flex items-center gap-6 ml-auto">
