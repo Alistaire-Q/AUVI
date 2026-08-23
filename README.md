@@ -55,8 +55,9 @@ Semua proses AI menggunakan **Groq API** yang **100% GRATIS**.
 
 ---
 
-## Fitur Utama
+## Fitur Utama (Key Features)
 
+**🇮🇩 Bahasa Indonesia:**
 - ✅ Input dari **YouTube URL** atau **upload file video** langsung (Resolusi HD Dinamis)
 - ✅ Transkripsi otomatis dengan **word-level timestamps** (Groq Whisper API)
 - ✅ AI menganalisis konten dan memilih segmen paling menarik (Llama 3.3 70B)
@@ -65,6 +66,16 @@ Semua proses AI menggunakan **Groq API** yang **100% GRATIS**.
 - ✅ Progress tracking **real-time** via Server-Sent Events (SSE)
 - ✅ Validasi semantik pintar (*Smart Trim*) untuk memastikan klip memiliki narasi utuh
 - ✅ **100% gratis** — menggunakan Groq API
+
+**🇬🇧 English:**
+- ✅ Input from **YouTube URLs** or **direct video file uploads** (Dynamic HD Resolution fallback)
+- ✅ Automatic transcription with **word-level timestamps** (Groq Whisper API)
+- ✅ AI analyzes content and selects the most engaging segments (Llama 3.3 70B)
+- ✅ Automatic **9:16 vertical crop** with face tracking and **HD Video Encoding**
+- ✅ **TikTok-style subtitles** (bold, burned-in) with *subtitle overlap prevention*
+- ✅ **Real-time** progress tracking via Server-Sent Events (SSE)
+- ✅ Smart semantic validation (*Smart Trim*) to ensure clips have complete narrative arcs
+- ✅ **100% Free** — entirely powered by the Groq API
 
 ---
 
