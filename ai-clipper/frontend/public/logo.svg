@@ -1,16 +1,6 @@
 ﻿<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#059669"/>
-      <stop offset="100%" stop-color="#10B981"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#grad)" />
-  <g transform="translate(256,256) scale(12) translate(-16,-16)">
-    <path d="M16 4L4 26h6l3-6h6l3 6h6L16 4z" fill="#ffffff" fill-opacity="0.25" />
-    <path d="M16 8l-7 16h3.4l1.1-2.6h5l1.1 2.6H23L16 8z" fill="#ffffff" />
-    <rect x="13.4" y="17.5" width="1.4" height="3.2" rx="0.7" fill="#ffffff" opacity="0.6" />
-    <rect x="15.3" y="16.4" width="1.4" height="5.4" rx="0.7" fill="#ffffff" opacity="0.6" />
-    <rect x="17.2" y="17.5" width="1.4" height="3.2" rx="0.7" fill="#ffffff" opacity="0.6" />
-  </g>
+  <rect width="512" height="512" rx="128" fill="#0F172A" />
+  <path d="M176 128 L176 384 L256 332.8" fill="white" />
+  <path d="M272 307.2 L368 256 L272 204.8" fill="white" />
+  <line x1="264" y1="112" x2="264" y2="400" stroke="white" stroke-width="12.8" stroke-dasharray="24 24" opacity="0.5" />
 </svg>
