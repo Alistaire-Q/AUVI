@@ -325,7 +325,11 @@ def find_best_clips(
                 continue
                 
             result = response.json()
-            llm_text = result["choices"][0]["message"]["content"].strip()
+            llm_text = response.json()["choices"][0]["message"]["content"].strip()
+            
+            # Remove <think>...</think> tags if reasoning models (e.g. Qwen, DeepSeek) are used
+            import re
+            llm_text = re.sub(r'<think>.*?</think>', '', llm_text, flags=re.DOTALL).strip()
             
             if llm_text.startswith("```"):
                 llm_text = llm_text.split("\n", 1)[1]
@@ -875,6 +879,11 @@ def _retry_with_fewer_clips(cfg: dict, transcript_text: str, total_duration: flo
             logger.error(f"LLM retry error {response.status_code}: {response.text}")
             return []
         llm_text = response.json()["choices"][0]["message"]["content"].strip()
+        
+        # Remove <think>...</think> tags if reasoning models are used
+        import re
+        llm_text = re.sub(r'<think>.*?</think>', '', llm_text, flags=re.DOTALL).strip()
+        
         if llm_text.startswith("```"):
             llm_text = llm_text.split("\n", 1)[1]
             llm_text = llm_text.rsplit("```", 1)[0].strip()

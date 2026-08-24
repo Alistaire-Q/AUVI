@@ -88,7 +88,7 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
                         }`}
                       >
                         <Icon className="w-8 h-8 mb-3" />
-                        <span className={`text-base font-semibold ${active ? 'text-accent-1' : 'text-text-primary'}`}>{opt.id}</span>
+                        <span className={`text-base font-semibold text-text-primary`}>{opt.id}</span>
                         <span className="text-sm opacity-80 mt-1">{opt.desc}</span>
                       </button>
                     );
