@@ -85,7 +85,7 @@ AUVI is built using a modern modular architecture based on an *internal micro-pi
                 ▼                                                                        ▼
   [ Groq Cloud AI Engine ]                                                  [ Local Media Pipeline ]
   ├─ Whisper Large-v3 (Word Timestamps)                                     ├─ yt-dlp (YouTube Extraction)
-  └─ Llama 3.3 70B Versatile (Viral Clip NLP Analysis)                     └─ FFmpeg (Clip & Burn Subtitles)
+  └─ Llama 3.3 70B Versatile (Viral Clip NLP Analysis)                      └─ FFmpeg (Clip & Burn Subtitles)
 ```
 
 ---
