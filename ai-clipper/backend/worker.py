@@ -12,7 +12,8 @@ from services.downloader import download_youtube, get_video_info
 from services.transcriber import extract_audio, transcribe
 from services.analyzer import find_best_clips
 from services.semantic_validator import validate_and_fix_clips
-from services.clipper import generate_clip, generate_thumbnail, get_video_duration
+from services.clipper import generate_clip, generate_thumbnail, get_video_duration, precompute_face_positions
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -113,8 +114,12 @@ def _sync_process_video(job_id: str):
 
         # ── Step 3: Analyze ──
         _update_job_by_id(job_id, step=3, progress=0, status="analyzing", step_message="Analyzing content for viral moments...")
+        
+        def analyzer_progress(percent, message):
+            _update_job_by_id(job_id, progress=percent, step_message=message)
+            
         try:
-            llm_clips = find_best_clips(transcript, settings)
+            llm_clips = find_best_clips(transcript, settings, progress_callback=analyzer_progress)
             clips_data = validate_and_fix_clips(llm_clips, transcript.get("words", []))
             _update_job_by_id(job_id, progress=100, step_message=f"Found {len(clips_data)} clip candidates")
         except Exception as e:
@@ -129,13 +134,22 @@ def _sync_process_video(job_id: str):
         # ── Step 4: Generate Clips ──
         _update_job_by_id(job_id, step=4, progress=0, status="clipping", step_message="Generating clips...")
         try:
-            for i, clip_data in enumerate(clips_data):
+            # Precompute face positions for all clips ONCE to save OpenCV overhead
+            frame_size = settings.get("frame_size", "9:16")
+            face_positions = precompute_face_positions(video_path, clips_data, frame_size)
+
+            def _process_single_clip(clip_data):
                 clip_filename = f"clip_{clip_data['index']}.mp4"
                 thumb_filename = f"thumb_{clip_data['index']}.jpg"
                 clip_path = os.path.join(job_dir, "clips", clip_filename)
                 thumb_path = os.path.join(job_dir, "thumbnails", thumb_filename)
 
-                generate_clip(video_path, clip_data["start"], clip_data["end"], clip_path, words=clip_data["words"], subtitle_settings=settings)
+                face_x = face_positions.get(clip_data["index"], "NOT_SET")
+                generate_clip(
+                    video_path, clip_data["start"], clip_data["end"], clip_path,
+                    words=clip_data["words"], subtitle_settings=settings, precomputed_face_x=face_x
+                )
+                
                 mid_time = (clip_data["start"] + clip_data["end"]) / 2
                 generate_thumbnail(video_path, mid_time, thumb_path)
 
@@ -159,8 +173,15 @@ def _sync_process_video(job_id: str):
                 finally:
                     db2.close()
 
-                progress = int(((i + 1) / len(clips_data)) * 100)
-                _update_job_by_id(job_id, progress=progress, step_message=f"Generated clip {i + 1}/{len(clips_data)}")
+            completed = 0
+            # Use max_workers=3 to parallelize rendering without overwhelming system memory
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = [executor.submit(_process_single_clip, c) for c in clips_data]
+                for future in as_completed(futures):
+                    future.result() # Will raise any exception caught in thread
+                    completed += 1
+                    progress = int((completed / len(clips_data)) * 100)
+                    _update_job_by_id(job_id, progress=progress, step_message=f"Generated clip {completed}/{len(clips_data)}")
 
         except Exception as e:
             _update_job_by_id(job_id, status="failed", error_message=f"Clip generation failed: {str(e)}")

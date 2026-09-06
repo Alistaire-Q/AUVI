@@ -192,6 +192,7 @@ Balas HANYA dengan JSON object berikut (tanpa markdown, tanpa penjelasan tambaha
 def find_best_clips(
     transcript: dict,
     settings: Optional[dict] = None,
+    progress_callback = None,
 ) -> list[dict]:
     """
     Send full transcript to LLM and get back precise clip timestamps.
@@ -261,6 +262,10 @@ def find_best_clips(
             f"{chunk_text}"
         )
         
+        if progress_callback:
+            pct = int((idx / len(chunks)) * 100)
+            progress_callback(pct, f"Menganalisis bagian {idx+1}/{len(chunks)} dengan AI...")
+        
         try:
             response = httpx.post(
                 f"{cfg['base_url']}/chat/completions",
@@ -300,6 +305,11 @@ def find_best_clips(
                     wait_time = 60.0
                     
                 logger.warning(f"Rate limit hit, sleeping for {wait_time:.1f}s (Attempt {attempt+1}/{max_retries})")
+                
+                if progress_callback:
+                    pct = int((idx / len(chunks)) * 100)
+                    progress_callback(pct, f"Limit API tercapai. Menunggu {int(wait_time)} detik (Bagian {idx+1}/{len(chunks)})...")
+                
                 time.sleep(wait_time)
                 
                 response = httpx.post(

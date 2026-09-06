@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["upload"])
 
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm"}
-MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
+MAX_FILE_SIZE = 50 * 1024 * 1024 * 1024  # 50 GB
 
 
 def _validate_upload(filename: str, file_size: int = 0):
@@ -39,7 +39,7 @@ def _validate_upload(filename: str, file_size: int = 0):
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=400,
-            detail=f"File too large: {file_size / 1024 / 1024:.1f}MB. Maximum: 500MB"
+            detail=f"File too large. Maximum: 50GB"
         )
 
 
@@ -89,7 +89,7 @@ async def upload_file(
                     os.remove(video_path)
                     raise HTTPException(
                         status_code=400,
-                        detail=f"File too large. Maximum: 500MB"
+                        detail=f"File too large. Maximum: 50GB"
                     )
                 f.write(chunk)
     except HTTPException:
@@ -126,9 +126,16 @@ async def upload_file(
 
     logger.info(f"Created upload job {job_id}: {file.filename} ({total_size / 1024 / 1024:.1f}MB)")
 
-    # Start processing pipeline in thread pool agar tidak memblokir event loop
-    from routers.process import _run_pipeline_inline
-    asyncio.create_task(_run_pipeline_inline(job_id))
+    from routers.process import _run_pipeline_inline, _redis_is_available
+    if await _redis_is_available():
+        from arq.connections import create_pool
+        from redis_client import get_redis_settings
+        redis = await create_pool(get_redis_settings())
+        await redis.enqueue_job('process_video_pipeline', job_id)
+        logger.info(f"Upload Job {job_id} enqueued to ARQ")
+    else:
+        asyncio.create_task(_run_pipeline_inline(job_id))
+        logger.info(f"Upload Job {job_id} started inline (local mode)")
 
     return UploadResponse(
         job_id=job_id,

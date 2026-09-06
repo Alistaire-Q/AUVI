@@ -201,15 +201,94 @@ def _detect_primary_face_x(
 
 
 # ──────────────────────────────────────────────
-# SRT Subtitle Generator
+# Subtitle Templates
 # ──────────────────────────────────────────────
 
-def _generate_srt(words: list[dict], output_path: str, offset: float = 0.0) -> str:
-    """
-    Generate SRT subtitle file from word timestamps.
-    Groups max 3 words per line for TikTok-style fast captions.
-    """
-def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subtitle_position: str = "bottom", frame_size: str = "9:16") -> str:
+SUBTITLE_TEMPLATES = {
+    "cinematic": {
+        "fontname": "Montserrat",
+        "fontsize": 64,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",   # Putih
+        "highlight_color": "&H00C8E6FF",  # Kuning lembut
+        "outline_color": "&H80000000",    # Hitam semi-transparan
+        "back_color": "&H80000000",
+        "border_style": 1,
+        "outline_width": 2,
+        "shadow_depth": 2,
+        "highlight_scale": 110,
+    },
+    "bold_viral": {
+        "fontname": "Impact",
+        "fontsize": 72,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",   # Putih
+        "highlight_color": "&H0000D7FF",  # Kuning TikTok
+        "outline_color": "&H00000000",    # Hitam solid
+        "back_color": "&H80000000",
+        "border_style": 1,
+        "outline_width": 5,
+        "shadow_depth": 3,
+        "highlight_scale": 115,
+    },
+    "soft_edu": {
+        "fontname": "Roboto",
+        "fontsize": 60,
+        "bold": 0,
+        "primary_color": "&H00F0F0FF",   # Putih krem
+        "highlight_color": "&H00FFD4A0",  # Biru muda
+        "outline_color": "&H00303030",    # Abu-abu gelap
+        "back_color": "&H60000000",
+        "border_style": 1,
+        "outline_width": 3,
+        "shadow_depth": 1,
+        "highlight_scale": 108,
+    },
+    "corporate": {
+        "fontname": "Montserrat",
+        "fontsize": 62,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",   # Putih
+        "highlight_color": "&H0080D080",  # Hijau aksen
+        "outline_color": "&H00000000",    # Hitam solid
+        "back_color": "&H80000000",
+        "border_style": 1,
+        "outline_width": 4,
+        "shadow_depth": 2,
+        "highlight_scale": 105,
+    },
+    "dark_mode": {
+        "fontname": "Roboto",
+        "fontsize": 66,
+        "bold": -1,
+        "primary_color": "&H00E0E0E0",   # Abu terang
+        "highlight_color": "&H00FFFF00",  # Cyan neon
+        "outline_color": "&H00000000",    # Hitam
+        "back_color": "&H60000000",
+        "border_style": 1,
+        "outline_width": 3,
+        "shadow_depth": 3,
+        "highlight_scale": 112,
+    },
+}
+
+# Backward compatibility: map old names to new
+_TEMPLATE_ALIASES = {
+    "tiktok": "bold_viral",
+    "standard": "cinematic",
+}
+
+def _get_template(style_name: str) -> dict:
+    """Get subtitle template by name, with fallback."""
+    name = _TEMPLATE_ALIASES.get(style_name, style_name)
+    return SUBTITLE_TEMPLATES.get(name, SUBTITLE_TEMPLATES["bold_viral"])
+
+
+# ──────────────────────────────────────────────
+# ASS Subtitle Generator
+# ──────────────────────────────────────────────
+
+def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subtitle_position: str = "bottom", frame_size: str = "9:16", subtitle_style: str = "bold_viral") -> str:
     """
     Generate Advanced SubStation Alpha (ASS) subtitle file for dynamic word-by-word highlights.
     Creates overlapping dialogue events to colorize the active word.
@@ -265,6 +344,9 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
         alignment = 2
         margin_v = 200
 
+    # Get template styling
+    tmpl = _get_template(subtitle_style)
+
     lines = [
         "[Script Info]",
         "ScriptType: v4.00+",
@@ -275,7 +357,7 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
         "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Default,Arial Black,72,&H00FFFFFF,&H000000FF,&H80000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,3,{alignment},60,60,{margin_v},1",
+        f"Style: Default,{tmpl['fontname']},{tmpl['fontsize']},{tmpl['primary_color']},&H000000FF,{tmpl['outline_color']},{tmpl['back_color']},{tmpl['bold']},0,0,0,100,100,0,0,{tmpl['border_style']},{tmpl['outline_width']},{tmpl['shadow_depth']},{alignment},60,60,{margin_v},1",
         "",
         "[Events]",
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
@@ -323,7 +405,9 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
             for j, loop_cw in enumerate(chunk):
                 word_text = loop_cw["word"].upper()
                 if j == i:
-                    text_parts.append(f"{{\\c&H00D7FF&\\fscx115\\fscy115}}{word_text}{{\\r}}")
+                    hl_color = tmpl['highlight_color']
+                    hl_scale = tmpl['highlight_scale']
+                    text_parts.append(f"{{\\c{hl_color}\\fscx{hl_scale}\\fscy{hl_scale}}}{word_text}{{\\r}}")
                 else:
                     text_parts.append(word_text)
                     
@@ -428,7 +512,7 @@ def generate_clip(
     if subtitle_enabled and words:
         srt_filename = f"subtitles_{os.path.basename(output_path)}.ass"
         srt_path = os.path.join(job_dir, srt_filename)
-        _generate_ass(words, srt_path, offset=start, subtitle_position=subtitle_position, frame_size=frame_size)
+        _generate_ass(words, srt_path, offset=start, subtitle_position=subtitle_position, frame_size=frame_size, subtitle_style=subtitle_style)
         # Fix path for FFmpeg (Windows path needs escaping or forward slashes)
         srt_ffmpeg_path = srt_path.replace("\\", "/")
         # Escape colons for FFmpeg filter (e.g., C:/... -> C\:/...)
@@ -501,48 +585,62 @@ def generate_clip(
         video_filter = f"{crop_filter},{scale_filter}"
 
     # ── 5. Execute FFmpeg — cut EXACTLY at LLM timestamps ──
-    # Optimasi kecepatan + kualitas:
-    # - preset=fast → keseimbangan antara kecepatan dan kualitas
-    # - crf=23 → kualitas visual jauh lebih baik (visually lossless)
-    # - threads=0 → gunakan semua CPU core yang tersedia
     try:
+        logger.info("Attempting GPU Hardware Acceleration (NVENC)...")
         stream = ffmpeg.input(source_path, ss=start, t=end-start)
         stream = ffmpeg.output(
             stream, output_path,
             vf=video_filter,
-            vcodec="libx264",
+            vcodec="h264_nvenc",
             acodec="aac",
-            preset="fast",
-            crf=18,
-            pix_fmt="yuv420p",  # Ensure compatible color space (prevents player issues)
+            preset="p4",
+            cq=18,
+            pix_fmt="yuv420p",
             movflags="faststart",
             threads=0,
         )
         ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
+        logger.info("GPU Rendering successful!")
+    except ffmpeg.Error as e_gpu:
+        logger.warning(f"GPU Acceleration (NVENC) unavailable or failed. Falling back to CPU (libx264)...")
+        try:
+            stream = ffmpeg.input(source_path, ss=start, t=end-start)
+            stream = ffmpeg.output(
+                stream, output_path,
+                vf=video_filter,
+                vcodec="libx264",
+                acodec="aac",
+                preset="fast",
+                crf=18,
+                pix_fmt="yuv420p",
+                movflags="faststart",
+                threads=0,
+            )
+            ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
 
-    except ffmpeg.Error as e:
-        stderr = e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)
-        logger.error(f"Clip generation failed: {stderr}")
-        # Fallback: try without subtitles
-        if srt_path:
-            logger.warning("Retrying without subtitles...")
-            try:
-                stream = ffmpeg.input(source_path, ss=start, t=end-start)
-                stream = ffmpeg.output(
-                    stream, output_path,
-                    vf=f"{crop_filter},{scale_filter}",
-                    vcodec="libx264",
-                    acodec="aac",
-                    preset="fast",
-                    crf=18,
-                    threads=0,
-                )
-                ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
-            except ffmpeg.Error as e2:
-                stderr2 = e2.stderr.decode('utf-8', errors='replace') if e2.stderr else str(e2)
-                raise RuntimeError(f"Fallback clip generation failed: {stderr2}")
-        else:
-            raise RuntimeError(f"Failed to generate clip: {stderr}")
+        except ffmpeg.Error as e:
+            stderr = e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)
+            logger.error(f"Clip generation failed: {stderr}")
+            # Fallback: try without subtitles
+            if srt_path:
+                logger.warning("Retrying without subtitles...")
+                try:
+                    stream = ffmpeg.input(source_path, ss=start, t=end-start)
+                    stream = ffmpeg.output(
+                        stream, output_path,
+                        vf=f"{crop_filter},{scale_filter}",
+                        vcodec="libx264",
+                        acodec="aac",
+                        preset="fast",
+                        crf=18,
+                        threads=0,
+                    )
+                    ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
+                except ffmpeg.Error as e2:
+                    stderr2 = e2.stderr.decode('utf-8', errors='replace') if e2.stderr else str(e2)
+                    raise RuntimeError(f"Fallback clip generation failed: {stderr2}")
+            else:
+                raise RuntimeError(f"Failed to generate clip: {stderr}")
 
     finally:
         # Cleanup temp SRT

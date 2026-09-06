@@ -5,6 +5,7 @@ import { X, Smartphone, Monitor, Square, AlignLeft, Tag, Loader2, Save } from 'l
 export default function PreferencesModal({ isOpen, onClose }) {
   const [frameSize, setFrameSize] = useState('9:16');
   const [subtitlePosition, setSubtitlePosition] = useState('bottom');
+  const [subtitleStyle, setSubtitleStyle] = useState('bold_viral');
   const [defaultTags, setDefaultTags] = useState('#shorts #podcast');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -18,6 +19,7 @@ export default function PreferencesModal({ isOpen, onClose }) {
           if (data && !data.detail) {
             if (data.frame_size) setFrameSize(data.frame_size);
             if (data.subtitle_position) setSubtitlePosition(data.subtitle_position);
+            if (data.subtitle_style) setSubtitleStyle(data.subtitle_style);
             if (data.default_tags) setDefaultTags(data.default_tags);
           }
           setIsLoading(false);
@@ -37,7 +39,7 @@ export default function PreferencesModal({ isOpen, onClose }) {
       body: JSON.stringify({
         frame_size: frameSize,
         subtitle_position: subtitlePosition,
-        subtitle_style: 'tiktok',
+        subtitle_style: subtitleStyle,
         default_tags: defaultTags
       })
     })

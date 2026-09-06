@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
   subtitle_enabled: true,
   subtitle_position: 'bottom',
   subtitle_font_size: 'medium',
-  subtitle_style: 'tiktok',
+  subtitle_style: 'bold_viral',
   frame_size: '9:16',
 };
 

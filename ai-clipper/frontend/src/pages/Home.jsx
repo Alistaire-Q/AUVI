@@ -76,6 +76,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Failed to generate:", err);
+      const errorMsg = err.response?.data?.detail || "Gagal memproses video. Pastikan format didukung (MP4/MOV).";
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
       setIsModalOpen(false);

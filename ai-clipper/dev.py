@@ -407,8 +407,15 @@ def main():
                 print(f"\n{RED}[DEV]{RESET} Frontend process exited with code {frontend_proc.returncode}")
                 break
             if worker_proc and worker_proc.poll() is not None:
-                print(f"\n{RED}[DEV]{RESET} Worker process exited with code {worker_proc.returncode}")
-                break
+                print(f"\n{YELLOW}[DEV]{RESET} Worker process exited with code {worker_proc.returncode}. Restarting in 3s...")
+                time.sleep(3)
+                if worker_proc in processes:
+                    processes.remove(worker_proc)
+                worker_proc = start_worker(env)
+                t_out = threading.Thread(target=stream_output, args=(worker_proc, "[WORKER]  ", GREEN), daemon=True)
+                t_err = threading.Thread(target=stream_stderr, args=(worker_proc, "[WORKER]  ", GREEN), daemon=True)
+                t_out.start()
+                t_err.start()
             time.sleep(1)
     except KeyboardInterrupt:
         pass

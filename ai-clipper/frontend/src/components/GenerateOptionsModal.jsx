@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crop, AlignLeft, Smartphone, Monitor, Square, Loader2 } from 'lucide-react';
+import { X, Crop, AlignLeft, Smartphone, Monitor, Square, Loader2, Type } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 
 export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLoading, pendingType, uploadProgress }) {
@@ -9,6 +9,7 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
   // Local state so we don't apply immediately until they click Generate
   const [frameSize, setFrameSize] = useState(settings.frame_size || '9:16');
   const [subtitlePosition, setSubtitlePosition] = useState(settings.subtitle_position || 'bottom');
+  const [subtitleStyle, setSubtitleStyle] = useState(settings.subtitle_style || 'bold_viral');
 
   if (!isOpen) return null;
 
@@ -16,6 +17,7 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
     updateSettings({
       frame_size: frameSize,
       subtitle_position: subtitlePosition,
+      subtitle_style: subtitleStyle,
     });
     onGenerate();
   };
@@ -30,6 +32,49 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
     { id: 'top', label: 'Top (Atas)' },
     { id: 'middle', label: 'Middle (Tengah)' },
     { id: 'bottom', label: 'Bottom (Bawah)' },
+  ];
+
+  const subtitleTemplates = [
+    { 
+      id: 'cinematic', 
+      label: 'Cinematic', 
+      desc: language === 'id' ? 'Elegan & minimalis' : 'Elegant & minimal',
+      font: '#FFFFFF', 
+      highlight: '#FFE6C8',
+      bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    },
+    { 
+      id: 'bold_viral', 
+      label: 'Bold Viral', 
+      desc: language === 'id' ? 'Energik ala TikTok' : 'TikTok-style energy',
+      font: '#FFFFFF', 
+      highlight: '#FFD700',
+      bg: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)',
+    },
+    { 
+      id: 'soft_edu', 
+      label: 'Soft Edu', 
+      desc: language === 'id' ? 'Tenang & edukatif' : 'Calm & educational',
+      font: '#FFF0F0', 
+      highlight: '#A0D4FF',
+      bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    },
+    { 
+      id: 'corporate', 
+      label: 'Corporate', 
+      desc: language === 'id' ? 'Profesional' : 'Professional',
+      font: '#FFFFFF', 
+      highlight: '#80D080',
+      bg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
+    },
+    { 
+      id: 'dark_mode', 
+      label: 'Dark Mode', 
+      desc: language === 'id' ? 'Modern & gelap' : 'Modern & dark',
+      font: '#E0E0E0', 
+      highlight: '#00FFFF',
+      bg: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%)',
+    },
   ];
 
   return (
@@ -90,6 +135,44 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
                         <Icon className="w-8 h-8 mb-3" />
                         <span className={`text-base font-semibold text-text-primary`}>{opt.id}</span>
                         <span className="text-sm opacity-80 mt-1">{opt.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Subtitle Style Template */}
+              <div className="space-y-4">
+                <label className="text-base font-medium text-text-primary flex items-center gap-2">
+                  <Type className="w-5 h-5" />
+                  {language === 'id' ? 'Gaya Subtitle' : 'Subtitle Style'}
+                </label>
+                <div className="grid grid-cols-5 gap-3">
+                  {subtitleTemplates.map((tmpl) => {
+                    const active = subtitleStyle === tmpl.id;
+                    return (
+                      <button
+                        key={tmpl.id}
+                        onClick={() => setSubtitleStyle(tmpl.id)}
+                        disabled={isLoading}
+                        className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${
+                          active
+                            ? 'border-accent-1 ring-2 ring-accent-1 shadow-lg scale-[1.02]'
+                            : 'border-border hover:border-text-muted hover:shadow-md'
+                        }`}
+                      >
+                        {/* Mini Preview Box */}
+                        <div
+                          className="w-full h-14 rounded-lg mb-2 flex items-center justify-center overflow-hidden"
+                          style={{ background: tmpl.bg }}
+                        >
+                          <span className="text-xs font-bold tracking-wide" style={{ color: tmpl.font }}>
+                            HELLO{' '}
+                            <span style={{ color: tmpl.highlight, fontSize: '14px' }}>WORLD</span>
+                          </span>
+                        </div>
+                        <span className="text-xs font-semibold text-text-primary leading-tight">{tmpl.label}</span>
+                        <span className="text-[10px] text-text-muted mt-0.5 leading-tight">{tmpl.desc}</span>
                       </button>
                     );
                   })}

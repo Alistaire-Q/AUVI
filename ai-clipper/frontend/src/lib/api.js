@@ -37,7 +37,7 @@ export async function uploadFile(file, settings = {}, onProgress = null) {
 
   const response = await api.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 600000, // 10 min timeout for large uploads
+    timeout: 0, // 0 means no timeout for large uploads
     onUploadProgress: (event) => {
       if (onProgress && event.total) {
         const percent = Math.round((event.loaded / event.total) * 100);
