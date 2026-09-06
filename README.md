@@ -4,6 +4,9 @@
 
 > An AI-powered tool that automatically clips long-form videos into viral-ready shorts, complete with TikTok-style subtitles and a 9:16 vertical crop.
 
+> [!WARNING]  
+> **EXPERIMENTAL/UNTESTED:** The automatic YouTube Shorts Integration (Publishing) feature is currently in an **untested/unproven** state. It has not been thoroughly verified in production. Use with caution.
+
 ---
 
 ## Table of Contents
