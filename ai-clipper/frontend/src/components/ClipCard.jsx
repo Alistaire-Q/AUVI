@@ -4,7 +4,9 @@ import { Play, Download, Copy, CheckCircle, Flame, Scissors, Clock, UploadCloud,
 import useClipStore from '../store/useClipStore';
 
 export default function ClipCard({ clip, index = 0 }) {
-  const { openPreview } = useClipStore();
+  const { openPreview, settings } = useClipStore();
+  const frameSize = settings.frame_size || '9:16';
+  const aspectClass = frameSize === '1:1' ? 'aspect-square' : frameSize === '16:9' ? 'aspect-video' : 'aspect-[9/16]';
   const [copied, setCopied] = useState(false);
   const [localStatus, setLocalStatus] = useState(clip.approval_status || 'pending');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,10 +93,10 @@ export default function ClipCard({ clip, index = 0 }) {
       transition={{ duration: 0.4, delay: index * 0.05 }}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md hover:border-accent-1/40"
     >
-      {/* Vertical 9:16 preview with real thumbnail */}
+      {/* Dynamic aspect ratio preview with real thumbnail */}
       <div className="relative mx-auto mt-3 w-full max-w-[200px]">
         <div
-          className="relative aspect-[9/16] w-full overflow-hidden rounded-xl border border-border cursor-pointer bg-black"
+          className={`relative ${aspectClass} w-full overflow-hidden rounded-xl border border-border cursor-pointer bg-black`}
           onClick={() => openPreview(clip)}
         >
           {clip.thumbnail_url ? (

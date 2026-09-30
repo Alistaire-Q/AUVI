@@ -94,7 +94,7 @@ export default function SettingsDrawer() {
                     language === 'id' ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
-                  Bahasa Indonesia
+                  Indonesian
                 </button>
 
                 {/* Animated Background Pill */}

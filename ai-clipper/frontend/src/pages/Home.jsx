@@ -150,7 +150,7 @@ export default function Home() {
         </div>
 
         {/* Input Bar */}
-        <div className="w-full max-w-[800px] bg-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-2.5 flex items-center border border-border mb-16">
+        <div className="w-full max-w-[800px] bg-card rounded-2xl shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_40px_-12px_rgba(255,255,255,0.06)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:hover:shadow-[0_25px_50px_-12px_rgba(255,255,255,0.08)] transition-all duration-300 p-2.5 flex items-center border border-border mb-16 transform hover:-translate-y-1">
           <div className="pl-4 pr-3 text-text-hint">
             <Link2 className="w-[22px] h-[22px]" />
           </div>
@@ -188,25 +188,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Clip workspace placeholder */}
-        <div className="w-full max-w-[850px] bg-card rounded-[32px] shadow-[0_8px_40px_rgb(0,0,0,0.03)] border border-border p-8 text-left relative overflow-hidden">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h2 className="text-[22px] font-semibold text-text-primary mb-1.5 tracking-tight">{language === 'id' ? 'Ruang kerja klip' : 'Clip workspace'}</h2>
-              <p className="text-text-muted text-[15px]">{language === 'id' ? 'Sesuaikan keluaran sebelum AUVI memproses.' : 'Tune output before AUVI runs the pipeline.'}</p>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border text-[13px] font-medium text-text-muted bg-card">
-              <div className="w-2 h-2 rounded-full bg-border"></div>
-              {language === 'id' ? 'Belum ada sumber' : 'No source yet'}
-            </div>
-          </div>
-          
-          <div className="mt-8 bg-surface rounded-2xl h-48 border border-border flex items-center justify-center">
-             <div className="text-center text-text-hint">
-               <p className="text-[15px] font-medium">{language === 'id' ? 'Menunggu masukan video...' : 'Waiting for video input...'}</p>
-             </div>
-          </div>
-        </div>
+
 
         {/* Recent Projects (if any) */}
         {recentProjects.length > 0 && (

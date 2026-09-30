@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crop, AlignLeft, Smartphone, Monitor, Square, Loader2, Type } from 'lucide-react';
+import { X, Crop, AlignLeft, Smartphone, Monitor, Square, Loader2, Type, Clapperboard, Flame, GraduationCap, Briefcase, Moon, Sparkles, CheckCircle2, TrendingUp, Users, Music, Diamond, Search } from 'lucide-react';
 import useClipStore from '../store/useClipStore';
 
 export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLoading, pendingType, uploadProgress }) {
   const { settings, updateSettings, language } = useClipStore();
-  
+
   // Local state so we don't apply immediately until they click Generate
   const [frameSize, setFrameSize] = useState(settings.frame_size || '9:16');
   const [subtitlePosition, setSubtitlePosition] = useState(settings.subtitle_position || 'bottom');
@@ -29,51 +29,121 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
   ];
 
   const positionOptions = [
-    { id: 'top', label: 'Top (Atas)' },
-    { id: 'middle', label: 'Middle (Tengah)' },
-    { id: 'bottom', label: 'Bottom (Bawah)' },
+    { id: 'top', label: 'Top' },
+    { id: 'middle', label: 'Middle' },
+    { id: 'bottom', label: 'Bottom' },
   ];
 
   const subtitleTemplates = [
-    { 
-      id: 'cinematic', 
-      label: 'Cinematic', 
-      desc: language === 'id' ? 'Elegan & minimalis' : 'Elegant & minimal',
-      font: '#FFFFFF', 
-      highlight: '#FFE6C8',
-      bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    {
+      id: 'manifesto',
+      label: 'Manifesto',
+      desc: language === 'id' ? 'Bold serif statement' : 'Bold serif statement',
+      previewIcon: Clapperboard,
+      titleIcon: Sparkles,
+      bg: 'linear-gradient(135deg, #1A0000 0%, #8B0000 50%, #CC0000 100%)',
+      fontColor: '#FF0000',
+      subColor: 'rgba(255,255,255,0.7)',
+      fontFamily: 'Georgia, "Times New Roman", serif'
     },
     { 
-      id: 'bold_viral', 
-      label: 'Bold Viral', 
-      desc: language === 'id' ? 'Energik ala TikTok' : 'TikTok-style energy',
-      font: '#FFFFFF', 
-      highlight: '#FFD700',
-      bg: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)',
+      id: 'pro_accent', 
+      label: 'Pro Accent', 
+      desc: language === 'id' ? 'Aksen kuning profesional' : 'Professional yellow highlight',
+      previewIcon: Flame,
+      titleIcon: Flame,
+      bg: 'linear-gradient(135deg, #1A1A2E 0%, #FFD700 100%)',
+      fontColor: '#FFD700',
+      subColor: 'rgba(255,255,255,0.8)',
+      fontFamily: '"Montserrat", sans-serif'
     },
-    { 
-      id: 'soft_edu', 
-      label: 'Soft Edu', 
+    {
+      id: 'soft_edu',
+      label: 'Soft Edu',
       desc: language === 'id' ? 'Tenang & edukatif' : 'Calm & educational',
-      font: '#FFF0F0', 
-      highlight: '#A0D4FF',
-      bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      previewIcon: GraduationCap,
+      titleIcon: GraduationCap,
+      bg: 'linear-gradient(135deg, #E0E7FF 0%, #A78BFA 100%)',
+      fontColor: '#4C1D95',
+      subColor: 'rgba(76,29,149,0.7)',
+      fontFamily: '"Roboto", sans-serif'
     },
-    { 
-      id: 'corporate', 
-      label: 'Corporate', 
+    {
+      id: 'corporate',
+      label: 'Corporate',
       desc: language === 'id' ? 'Profesional' : 'Professional',
-      font: '#FFFFFF', 
-      highlight: '#80D080',
-      bg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
+      previewIcon: Briefcase,
+      titleIcon: Briefcase,
+      bg: 'linear-gradient(135deg, #064E3B 0%, #0F766E 100%)',
+      fontColor: '#FFFFFF',
+      subColor: 'rgba(255,255,255,0.7)',
+      fontFamily: '"Montserrat", sans-serif'
     },
-    { 
-      id: 'dark_mode', 
-      label: 'Dark Mode', 
+    {
+      id: 'dark_mode',
+      label: 'Dark Mode',
       desc: language === 'id' ? 'Modern & gelap' : 'Modern & dark',
-      font: '#E0E0E0', 
-      highlight: '#00FFFF',
-      bg: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%)',
+      previewIcon: Moon,
+      titleIcon: Moon,
+      bg: 'linear-gradient(135deg, #171717 0%, #3F3F46 100%)',
+      fontColor: '#FFFFFF',
+      subColor: 'rgba(255,255,255,0.6)',
+      fontFamily: '"Roboto", sans-serif'
+    },
+    {
+      id: 'market',
+      label: 'Market',
+      desc: language === 'id' ? 'Finansial & Bisnis' : 'Finance & Business',
+      previewIcon: TrendingUp,
+      titleIcon: TrendingUp,
+      bg: 'linear-gradient(135deg, #00D964 0%, #FF3B30 100%)',
+      fontColor: '#FFFFFF',
+      subColor: 'rgba(255,255,255,0.8)',
+      fontFamily: '"Oswald", sans-serif'
+    },
+    {
+      id: 'duo',
+      label: 'Duo',
+      desc: language === 'id' ? 'Podcast 2 Pembicara' : 'Dual Speaker Podcast',
+      previewIcon: Users,
+      titleIcon: Users,
+      bg: 'linear-gradient(135deg, #FFA630 0%, #2EC4B6 100%)',
+      fontColor: '#FFFFFF',
+      subColor: 'rgba(255,255,255,0.9)',
+      fontFamily: '"Inter", sans-serif'
+    },
+    {
+      id: 'pop',
+      label: 'Pop',
+      desc: language === 'id' ? 'Gen-Z & Hiburan' : 'Gen-Z & Entertainment',
+      previewIcon: Music,
+      titleIcon: Music,
+      bg: 'linear-gradient(135deg, #FF3EA5 0%, #7B2FF7 100%)',
+      fontColor: '#FFFFFF',
+      subColor: 'rgba(255,255,255,0.9)',
+      fontFamily: '"Baloo 2", sans-serif'
+    },
+    {
+      id: 'noir',
+      label: 'Noir',
+      desc: language === 'id' ? 'Mewah & Premium' : 'Luxury & Premium',
+      previewIcon: Diamond,
+      titleIcon: Diamond,
+      bg: 'linear-gradient(135deg, #D4AF37 0%, #1A1A1A 100%)',
+      fontColor: '#FFFFFF',
+      subColor: 'rgba(212,175,55,0.7)',
+      fontFamily: '"Playfair Display", serif'
+    },
+    {
+      id: 'casefile',
+      label: 'Casefile',
+      desc: language === 'id' ? 'Misteri & Dokumenter' : 'Mystery & Documentary',
+      previewIcon: Search,
+      titleIcon: Search,
+      bg: 'linear-gradient(135deg, #8B0000 0%, #F5F1E8 100%)',
+      fontColor: '#F5F1E8',
+      subColor: 'rgba(245,241,232,0.7)',
+      fontFamily: '"Bebas Neue", sans-serif'
     },
   ];
 
@@ -126,11 +196,10 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
                         key={opt.id}
                         onClick={() => setFrameSize(opt.id)}
                         disabled={isLoading}
-                        className={`flex flex-col items-center justify-center p-5 rounded-xl border text-center transition-all ${
-                          active
+                        className={`flex flex-col items-center justify-center p-5 rounded-xl border text-center transition-all ${active
                             ? 'border-accent-1 bg-accent-1/10 text-accent-1 ring-1 ring-accent-1'
                             : 'border-border bg-surface text-text-muted hover:border-text-primary hover:bg-card-hover'
-                        }`}
+                          }`}
                       >
                         <Icon className="w-8 h-8 mb-3" />
                         <span className={`text-base font-semibold text-text-primary`}>{opt.id}</span>
@@ -150,29 +219,45 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
                 <div className="grid grid-cols-5 gap-3">
                   {subtitleTemplates.map((tmpl) => {
                     const active = subtitleStyle === tmpl.id;
+                    const PreviewIcon = tmpl.previewIcon;
+                    const TitleIcon = tmpl.titleIcon;
                     return (
                       <button
                         key={tmpl.id}
                         onClick={() => setSubtitleStyle(tmpl.id)}
                         disabled={isLoading}
-                        className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${
-                          active
-                            ? 'border-accent-1 ring-2 ring-accent-1 shadow-lg scale-[1.02]'
-                            : 'border-border hover:border-text-muted hover:shadow-md'
-                        }`}
+                        className={`flex flex-col p-2 rounded-xl border bg-card transition-all ${active
+                            ? 'border-accent-1 ring-1 ring-accent-1 shadow-sm scale-[1.02]'
+                            : 'border-border hover:border-text-muted hover:shadow-sm'
+                          }`}
                       >
                         {/* Mini Preview Box */}
                         <div
-                          className="w-full h-14 rounded-lg mb-2 flex items-center justify-center overflow-hidden"
+                          className="relative w-full h-24 rounded-lg p-3 flex flex-col justify-between overflow-hidden"
                           style={{ background: tmpl.bg }}
                         >
-                          <span className="text-xs font-bold tracking-wide" style={{ color: tmpl.font }}>
-                            HELLO{' '}
-                            <span style={{ color: tmpl.highlight, fontSize: '14px' }}>WORLD</span>
-                          </span>
+                          <div className="flex justify-between items-start w-full">
+                            <PreviewIcon className="w-4 h-4" style={{ color: tmpl.subColor }} />
+                            {active && (
+                              <div className="bg-white rounded-full flex items-center justify-center w-5 h-5 shadow-sm">
+                                <CheckCircle2 className="w-5 h-5 text-accent-1" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="text-left mt-2" style={{ fontFamily: tmpl.fontFamily }}>
+                            <div className="text-[10px] uppercase font-medium tracking-wide" style={{ color: tmpl.subColor }}>HELLO</div>
+                            <div className="text-lg font-bold uppercase leading-none tracking-tight" style={{ color: tmpl.fontColor }}>WORLD</div>
+                          </div>
                         </div>
-                        <span className="text-xs font-semibold text-text-primary leading-tight">{tmpl.label}</span>
-                        <span className="text-[10px] text-text-muted mt-0.5 leading-tight">{tmpl.desc}</span>
+
+                        <div className="mt-3 text-center w-full pb-1">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <TitleIcon className="w-3.5 h-3.5 text-text-muted" />
+                            <span className="text-xs font-semibold text-text-primary">{tmpl.label}</span>
+                          </div>
+                          <div className="text-[10px] text-text-muted mt-1 leading-tight">{tmpl.desc}</div>
+                        </div>
                       </button>
                     );
                   })}
@@ -185,37 +270,39 @@ export default function GenerateOptionsModal({ isOpen, onClose, onGenerate, isLo
                   <AlignLeft className="w-5 h-5" />
                   {language === 'id' ? 'Posisi Takarir' : 'Subtitle Position'}
                 </label>
-                <div className="flex bg-surface rounded-xl p-1.5 border border-border">
-                  {positionOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => setSubtitlePosition(opt.id)}
-                      disabled={isLoading}
-                      className={`flex-1 py-3 text-sm font-medium rounded-lg transition-all ${
-                        subtitlePosition === opt.id
-                          ? 'bg-card text-text-primary shadow-sm border border-border'
-                          : 'text-text-muted hover:text-text-primary'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-4">
+                  {positionOptions.map((opt) => {
+                    const active = subtitlePosition === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setSubtitlePosition(opt.id)}
+                        disabled={isLoading}
+                        className={`flex items-center justify-center py-3 px-4 rounded-xl border text-center transition-all ${active
+                            ? 'border-accent-1 bg-accent-1/10 text-accent-1 ring-1 ring-accent-1 font-semibold'
+                            : 'border-border bg-surface text-text-muted hover:border-text-primary hover:bg-card-hover font-medium'
+                          }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Progress / Status (if file upload) */}
               {isLoading && pendingType === 'upload' && (
-                 <div className="space-y-3 mt-4 bg-surface p-4 rounded-xl border border-border">
-                   <div className="flex justify-between text-sm text-text-muted mb-2">
-                     <span className="text-text-primary">{language === 'id' ? 'Mengunggah file...' : 'Uploading file...'}</span>
-                     <span className="text-text-primary font-medium">{uploadProgress}%</span>
-                   </div>
-                   <div className="progress-bar bg-border h-2 rounded-full overflow-hidden">
-                     <div className="progress-bar-fill h-full bg-accent-1 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                   </div>
-                 </div>
+                <div className="space-y-3 mt-4 bg-surface p-4 rounded-xl border border-border">
+                  <div className="flex justify-between text-sm text-text-muted mb-2">
+                    <span className="text-text-primary">{language === 'id' ? 'Mengunggah file...' : 'Uploading file...'}</span>
+                    <span className="text-text-primary font-medium">{uploadProgress}%</span>
+                  </div>
+                  <div className="progress-bar bg-border h-2 rounded-full overflow-hidden">
+                    <div className="progress-bar-fill h-full bg-accent-1 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                </div>
               )}
-              
+
               {isLoading && pendingType === 'link' && (
                 <div className="flex items-center justify-center gap-3 text-base text-text-primary mt-4 bg-surface p-5 rounded-xl border border-border">
                   <Loader2 className="w-5 h-5 animate-spin text-accent-1" />

@@ -98,13 +98,13 @@ class SettingsSchema(BaseModel):
     subtitle_enabled: bool = Field(default=True)
     subtitle_position: str = Field(default="bottom")  # "top", "middle", "bottom"
     subtitle_font_size: str = Field(default="medium")  # "small", "medium", "large"
-    subtitle_style: str = Field(default="bold_viral")  # "cinematic", "bold_viral", "soft_edu", "corporate", "dark_mode"
+    subtitle_style: str = Field(default="pro_accent")  # "manifesto", "pro_accent", "soft_edu", "corporate", "dark_mode"
     frame_size: str = Field(default="9:16")  # "9:16", "16:9", "1:1"
 
 
 class PreferencesSchema(BaseModel):
     frame_size: str = Field(default="9:16")
-    subtitle_style: str = Field(default="bold_viral")
+    subtitle_style: str = Field(default="pro_accent")
     subtitle_position: str = Field(default="bottom")
     default_tags: str = Field(default="#shorts #podcast #auvi")
 

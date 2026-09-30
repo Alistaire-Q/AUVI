@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
   subtitle_enabled: true,
   subtitle_position: 'bottom',
   subtitle_font_size: 'medium',
-  subtitle_style: 'bold_viral',
+  subtitle_style: 'pro_accent',
   frame_size: '9:16',
 };
 

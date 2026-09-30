@@ -29,6 +29,7 @@ export default function Dashboard() {
     sortBy,
     setSortBy,
     setCurrentJob,
+    settings,
   } = useClipStore();
 
   useEffect(() => {
@@ -167,7 +168,7 @@ export default function Dashboard() {
               {[
                 { icon: Sparkles, label: 'Clips', value: `${filteredClips.length} found` },
                 { icon: Captions, label: 'Captions', value: 'Auto' },
-                { icon: Clock, label: 'Reframe', value: '9:16' },
+                { icon: Clock, label: 'Reframe', value: settings.frame_size || '9:16' },
                 { icon: Hash, label: 'Hashtags', value: `${filteredClips.length * 2} auto` },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-2 rounded-xl border border-border bg-card/40 px-3 py-2 backdrop-blur">

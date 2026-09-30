@@ -248,10 +248,23 @@ def find_best_clips(
     clips_raw = []
     
     import time
+    import re
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import threading
     
-    for idx, chunk_words in enumerate(chunks):
-        if not chunk_words: continue
-        
+    # Configurable concurrency: default=2 (safe for most paid API tiers)
+    # Set LLM_CONCURRENCY=1 in .env for free-tier Groq to avoid rate limits
+    LLM_CONCURRENCY = int(os.environ.get("LLM_CONCURRENCY", "2"))
+    
+    completed_counter = threading.Lock()
+    completed_count = [0]  # mutable counter for thread-safe progress
+    
+    def _analyze_single_chunk(idx_and_chunk):
+        """Analyze a single chunk with the LLM API. Thread-safe."""
+        idx, chunk_words = idx_and_chunk
+        if not chunk_words:
+            return []
+            
         chunk_text = _build_transcript_text(chunk_words)
         chunk_dur = chunk_words[-1]["end"] - chunk_words[0]["start"]
         
@@ -261,10 +274,6 @@ def find_best_clips(
             f"TRANSKRIP VIDEO (Bagian {idx + 1}, durasi: {chunk_dur:.1f} detik):\n"
             f"{chunk_text}"
         )
-        
-        if progress_callback:
-            pct = int((idx / len(chunks)) * 100)
-            progress_callback(pct, f"Menganalisis bagian {idx+1}/{len(chunks)} dengan AI...")
         
         try:
             response = httpx.post(
@@ -285,7 +294,6 @@ def find_best_clips(
                 timeout=HTTP_TIMEOUT,
             )
             
-            import re
             max_retries = 3
             for attempt in range(max_retries):
                 if response.status_code != 429:
@@ -304,11 +312,10 @@ def find_best_clips(
                 except Exception:
                     wait_time = 60.0
                     
-                logger.warning(f"Rate limit hit, sleeping for {wait_time:.1f}s (Attempt {attempt+1}/{max_retries})")
+                logger.warning(f"Rate limit hit on chunk {idx+1}, sleeping for {wait_time:.1f}s (Attempt {attempt+1}/{max_retries})")
                 
                 if progress_callback:
-                    pct = int((idx / len(chunks)) * 100)
-                    progress_callback(pct, f"Limit API tercapai. Menunggu {int(wait_time)} detik (Bagian {idx+1}/{len(chunks)})...")
+                    progress_callback(None, f"Limit API tercapai. Menunggu {int(wait_time)} detik (Bagian {idx+1}/{len(chunks)})...")
                 
                 time.sleep(wait_time)
                 
@@ -332,13 +339,11 @@ def find_best_clips(
                 
             if response.status_code != 200:
                 logger.error(f"LLM API error on chunk {idx+1}: {response.text}")
-                continue
+                return []
                 
-            result = response.json()
             llm_text = response.json()["choices"][0]["message"]["content"].strip()
             
             # Remove <think>...</think> tags if reasoning models (e.g. Qwen, DeepSeek) are used
-            import re
             llm_text = re.sub(r'<think>.*?</think>', '', llm_text, flags=re.DOTALL).strip()
             
             if llm_text.startswith("```"):
@@ -357,16 +362,44 @@ def find_best_clips(
             elif isinstance(parsed, list):
                 chunk_clips = parsed
                 
-            clips_raw.extend(chunk_clips)
             logger.info(f"Chunk {idx+1} yielded {len(chunk_clips)} clips")
+            return chunk_clips
             
         except Exception as e:
             logger.error(f"LLM analysis failed on chunk {idx+1}: {e}")
-            continue
+            return []
+    
+    # ── Execute LLM analysis (parallel or sequential) ──
+    chunk_tasks = [(idx, cw) for idx, cw in enumerate(chunks) if cw]
+    
+    if LLM_CONCURRENCY > 1 and len(chunk_tasks) > 1:
+        logger.info(f"Parallel LLM analysis: {len(chunk_tasks)} chunks × {LLM_CONCURRENCY} concurrent workers")
+        if progress_callback:
+            progress_callback(0, f"Menganalisis {len(chunk_tasks)} bagian secara paralel ({LLM_CONCURRENCY} thread)...")
+        
+        with ThreadPoolExecutor(max_workers=LLM_CONCURRENCY) as executor:
+            futures = {executor.submit(_analyze_single_chunk, task): task[0] for task in chunk_tasks}
+            for future in as_completed(futures):
+                chunk_clips = future.result()
+                clips_raw.extend(chunk_clips)
+                with completed_counter:
+                    completed_count[0] += 1
+                    if progress_callback:
+                        pct = int((completed_count[0] / len(chunk_tasks)) * 95)  # Reserve 5% for post-processing
+                        progress_callback(pct, f"Selesai menganalisis {completed_count[0]}/{len(chunk_tasks)} bagian...")
+    else:
+        logger.info(f"Sequential LLM analysis: {len(chunk_tasks)} chunks (LLM_CONCURRENCY={LLM_CONCURRENCY})")
+        for task in chunk_tasks:
+            idx = task[0]
+            if progress_callback:
+                pct = int((idx / len(chunk_tasks)) * 95)
+                progress_callback(pct, f"Menganalisis bagian {idx+1}/{len(chunk_tasks)} dengan AI...")
+            chunk_clips = _analyze_single_chunk(task)
+            clips_raw.extend(chunk_clips)
 
     if not clips_raw:
         logger.error("No clips extracted from LLM analysis. Aborting instead of using poor-quality fallback.")
-        raise RuntimeError("AI Groq tidak mengembalikan data klip (kemungkinan kuota token harian habis atau koneksi terikat limit).")
+        raise RuntimeError("The AI did not return any clip data (daily token quota may be exhausted or connection rate-limited).")
 
     # ── Convert LLM output to internal clip format ──
     result_clips = []

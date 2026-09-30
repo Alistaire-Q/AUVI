@@ -5,7 +5,7 @@ import { X, Smartphone, Monitor, Square, AlignLeft, Tag, Loader2, Save } from 'l
 export default function PreferencesModal({ isOpen, onClose }) {
   const [frameSize, setFrameSize] = useState('9:16');
   const [subtitlePosition, setSubtitlePosition] = useState('bottom');
-  const [subtitleStyle, setSubtitleStyle] = useState('bold_viral');
+  const [subtitleStyle, setSubtitleStyle] = useState('pro_accent');
   const [defaultTags, setDefaultTags] = useState('#shorts #podcast');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

@@ -1,6 +1,6 @@
 <p align="center"><img src="ai-clipper/frontend/public/logo_white.svg" width="128" /></p>
 
-# AUVI - AI Video Clipper
+# AUVI — AI Video Clipper
 
 > An AI-powered tool that automatically clips long-form videos into viral-ready shorts, complete with TikTok-style subtitles and a 9:16 vertical crop.
 
@@ -13,7 +13,8 @@
 
 - [What is AUVI?](#what-is-auvi)
 - [Key Features](#key-features)
-- [Architecture & Project Structure](#architecture--project-structure)
+- [System Architecture](#system-architecture)
+- [Project Structure](#project-structure)
 - [System Requirements](#system-requirements)
 - [Quick Start Guide](#quick-start-guide)
 - [Advanced Configuration](#advanced-configuration)
@@ -33,12 +34,10 @@
 3. **Analyze** content and select the most engaging/viral segments
 4. **Clip** the video into short vertical clips (9:16) complete with subtitles
 
-The application consists of two main parts:
-
 | Part | Technology | Function |
 |--------|-----------|--------|
-| **Backend** | Python (FastAPI) | API Server - handles video downloads, transcription, AI analysis, and clipping |
-| **Frontend** | React (Vite) | Web-based User Interface - upload, track progress, download results |
+| **Backend** | Python (FastAPI) | API Server — handles video downloads, transcription, AI analysis, and clipping |
+| **Frontend** | React (Vite) | Web-based User Interface — upload, track progress, download results |
 
 All AI processing uses the **Groq API** which is **100% FREE**.
 
@@ -51,106 +50,97 @@ All AI processing uses the **Groq API** which is **100% FREE**.
 - Automatic transcription with **word-level timestamps** (Groq Whisper API)
 - AI analyzes content and selects the most engaging segments (Llama 3.3 70B)
 - Automatic **9:16 vertical crop** with face tracking and **HD Video Encoding**
-- **TikTok-style subtitles** (bold, burned-in) with *subtitle overlap prevention*
+- **10+ subtitle styles** — Manifesto, Bold Viral, Soft Edu, Corporate, Dark Mode, Market, Duo, Pop, Noir, Casefile
+- **GPU-accelerated rendering** — AMD (AMF), NVIDIA (NVENC), Intel (QSV) with CPU fallback
 - **Real-time** progress tracking via Server-Sent Events (SSE)
 - Smart semantic validation (*Smart Trim*) to ensure clips have complete narrative arcs
-- **100% Free** - entirely powered by the Groq API
+- **100% Free** — entirely powered by the Groq API
 
 **Bahasa Indonesia:**
 - Input dari **YouTube URL** atau **upload file video** langsung (Resolusi HD Dinamis)
 - Transkripsi otomatis dengan **word-level timestamps** (Groq Whisper API)
 - AI menganalisis konten dan memilih segmen paling menarik (Llama 3.3 70B)
 - **Crop vertikal 9:16** otomatis dengan face tracking dan **HD Video Encoding**
-- **Subtitle bergaya TikTok** (bold, burn-in ke video) dengan *overlap prevention*
+- **10+ gaya subtitle** — Manifesto, Bold Viral, Soft Edu, Corporate, Dark Mode, Market, Duo, Pop, Noir, Casefile
+- **Rendering GPU-accelerated** — AMD (AMF), NVIDIA (NVENC), Intel (QSV) dengan fallback CPU
 - Progress tracking **real-time** via Server-Sent Events (SSE)
 - Validasi semantik pintar (*Smart Trim*) untuk memastikan klip memiliki narasi utuh
-- **100% gratis** - menggunakan Groq API
+- **100% gratis** — menggunakan Groq API
 
 ---
 
-## Architecture & Project Structure
+## System Architecture
+
+<p align="center">
+  <img src="AUVI_diagram.png" alt="AUVI System Architecture Diagram" width="720" />
+</p>
 
 AUVI is built using a modern modular architecture based on an *internal micro-pipeline* that decouples I/O intensive workloads (video downloads & API transmissions) from pure computational workloads (FFmpeg media processing & AI parsing).
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                       AUVI ARCHITECTURE                                         │
-└─────────────────────────────────────────────────────────────────────────────────────────────────┘
-  [ Frontend Web Client ] ◄─── REST API / SSE Real-time Progress ───► [ FastAPI Application Server ]
-           │                                                                     │
-           ▼                                                                     ▼
-  [ Supabase PostgreSQL ] ◄─── Sync Metadata & Accounts ─────────────► [ Upstash Redis Cloud Queue ]
-                                                                                 │
-                                                                                 ▼
-                                                                      [ ARQ Background Worker ]
-                                                                                 │
-                ┌────────────────────────────────────────────────────────────────┴───────┐
-                ▼                                                                        ▼
-  [ Groq Cloud AI Engine ]                                                  [ Local Media Pipeline ]
-  ├─ Whisper Large-v3 (Word Timestamps)                                     ├─ yt-dlp (YouTube Extraction)
-  └─ Llama 3.3 70B Versatile (Viral Clip NLP Analysis)                      └─ FFmpeg (Clip & Burn Subtitles)
-```
+### 1. Browser Client Layer
+
+The React/Vite frontend handles user interaction through three main pages — **Home** (input portal), **Processing** (real-time SSE progress terminal), and **Dashboard** (clip results & publishing). State is managed centrally via Zustand (`useClipStore.js`) and all API communication flows through the `api.js` boundary layer.
+
+### 2. API & Jobs Layer
+
+- **FastAPI Application Server (`main.py`):** Receives HTTP requests and routes them through dedicated API routers (`process.py`, `clips.py`, `upload.py`).
+- **ARQ Asynchronous Worker (`worker.py`):** Video analysis requests are not processed on the main HTTP thread. Jobs are queued in **Upstash Redis (SSL)** and executed by the ARQ Worker in the background with job timeouts up to **1 hour** and exponential backoff retry mechanisms.
+- **Real-Time SSE Tracking:** The server broadcasts millisecond status updates via *Server-Sent Events (SSE)* so users can track the pipeline *(Downloading → Transcribing → Analyzing → Clipping → Ready)* transparently.
+
+### 3. Media Pipeline
+
+The core processing chain runs inside the ARQ Worker:
+
+| Stage | Module | Description |
+|-------|--------|-------------|
+| **Ingest** | `downloader.py` | Extracts video/audio from YouTube (yt-dlp) or accepts direct uploads |
+| **Transcribe** | `transcriber.py` | Produces word-timed transcription via Groq Whisper Large-v3 |
+| **Analyze** | `analyzer.py` | Senior Video Editor prompting (Llama 3.3 70B) with sentence-aware smart chunking |
+| **Validate** | `semantic_validator.py` | Bilingual linguistic engine — snaps timestamps to word boundaries, completes lists & questions, eliminates dangling connectors |
+| **Render** | `clipper.py` | FFmpeg vertical crop, subtitle burning with 10+ style templates, GPU-accelerated encoding |
+
+### 4. AI & NLP Intelligence
+
+- **Senior Video Editor Prompting (Llama 3.3 70B):** The LLM acts as the sole decision-maker, hunting for *viral hooks* and parsing content into highly marketable subtopics (30–180s) graded with a virality score from 1 to 100.
+- **Sentence-Aware Smart Chunking:** Transcripts are divided into balanced 10-minute blocks (600s) that never cut mid-sentence. A 35+ minute video only requires ~4 network calls (~4,000 tokens), making it highly efficient.
+- **Pure-AI Quality Guarantee:** If the API disconnects or tokens are depleted, the system refuses to generate "dummy" clips — it surfaces an error to maintain content integrity.
+
+### 5. Infrastructure & Providers
+
+| Service | Module | Purpose |
+|---------|--------|---------|
+| **Groq AI APIs** | External | Whisper transcription & Llama 3.3 analysis |
+| **Redis / Upstash** | `redis_client.py` | High-speed job queue with SSL |
+| **Database** | `database.py` | PostgreSQL (Supabase) or SQLite fallback for job & clip metadata |
+| **YouTube Shorts** | `youtube_api.py` | Google OAuth 2.0 integration for one-click publishing |
 
 ---
 
-### 1. Asynchronous Processing Architecture (Background Task Queue)
-
-Processing long-form videos requires robust memory management and system resilience to prevent server overloads and HTTP Timeouts:
-
-- **Decoupling with ARQ & Upstash Redis:** Video analysis requests entering through the FastAPI interface are not processed immediately on the main HTTP thread. The job is queued in the high-speed in-memory **Upstash Redis (SSL)** and executed by an **Asynchronous ARQ Worker** in the background.
-- **Rate-Limit Resilience & Fault Tolerance:** Workers have job timeouts up to **1 hour (`job_timeout = 3600`)** and exponential backoff retry mechanisms. If the Tokens-Per-Minute (TPM) quota from external APIs (Groq) hits a temporary limit, the worker intuitively sleeps (*smart sleep*) and resumes as soon as tokens refresh, without ever failing your main execution midway.
-- **Real-Time SSE Tracking:** The server broadcasts millisecond status updates via *Server-Sent Events (SSE)* to the React frontend. Users can track the pipeline *(Downloading -> Transcribing -> Analyzing -> Clipping -> Ready)* transparently.
-
----
-
-### 2. AI & NLP Architecture (Smart Chunking & Pure-AI Guarantee)
-
-AUVI's core intelligence lies in high-fidelity *Prompt Engineering* and premium text *chunking* techniques:
-
-- **Senior Video Editor Prompting (Llama 3.3 70B):** The LLM acts as the sole decision-maker. The model receives professional editor instructions to hunt for *viral hooks*, parsing sequential long-form content into highly marketable independent subtopics (30-180 seconds) graded with a virality score from 1 to 100.
-- **Sentence-Aware Smart Chunking (Saves up to 97% Tokens):** To handle very long videos without hallucination risks or JSON truncation, transcripts are divided into balanced 10-minute blocks (600 seconds) that are **forbidden from cutting mid-sentence**. The system clock is strictly reset per block so a 35+ minute video only requires ~4 network calls (consuming a mere ~4,000 tokens of the daily quota), making it highly efficient and fast.
-- **Pure-AI Quality Guarantee (Zero Dummy Fallback):** The AUVI system is strictly committed to pure AI analysis. If the API network disconnects or your daily token quota is entirely depleted, the system vehemently rejects generating "dummy" clips based on raw word-count estimations; instead, it immediately surfaces an open error message to maintain your content presentation integrity.
-
----
-
-### 3. Post-LLM Semantic & Linguistic Validator Architecture
-
-AI often returns second-timestamps that slightly drift from the actual speech. To fix this, AUVI integrates a specialized post-lingual validation system (`semantic_validator.py`):
-
-- **Millisecond Word-Snap & Subtitle Anti-Overlap:** Perfects the LLM's second-level precision by snapping the *start_time* and *end_time* directly to the absolute word and punctuation (`.`, `!`, `?`) boundaries thanks to Groq Whisper API's word-level timestamps. The rendering engine also enforces a forced 0.05s *gap* between text to prevent subtitle overlaps.
-- **List & Question Completion Extension:** Contains bilingual linguistic intelligence (**Indonesian & English**). If the AI cuts a clip right before a list is fully uttered (*"There are 3 secrets..."*) or right after a hook question is left hanging (*"Why did it fail? Because..."*), the validator engine automatically expands the clip's duration until the concluding explanation is fully captured.
-- **Smart Trim 90s & Dangling Connector Elimination:** Eliminates the risk of videos getting cut off on dangling conjunctions (*"because...", "and..."*). If a clip's duration blows past the 90-second limit, the system doesn't perform a hard-cut; rather, it steps back carefully to find the nearest sentence boundary so the narrative remains intact. Includes clip merging (deduplication) for matching topics.
-
----
-
-### 4. Cloud Database & Publishing Automation Architecture
-
-- **Supabase PostgreSQL Persistent Layer:** Execution flow metadata, clip performance history, virality scores, and user account data are organized using robust transactional database standards backed by Cloud PostgreSQL (Supabase).
-- **One-Click YouTube Shorts Automation:** Built-in **Google OAuth 2.0 API** authentication integration allows every high-accuracy clip-encapsulated with bright, burned-in TikTok-style subtitles-to be automatically or scheduledly launched directly to the creator's *YouTube Shorts* stage from the control dashboard.
-
----
-
-### Project Directory Structure
+## Project Structure
 
 ```
 AUVI/
-├── README.md                   <- This file (comprehensive guide & architecture)
+├── README.md                   <- This file
+├── AUVI_diagram.png            <- System architecture diagram
 ├── LICENSE                     <- MIT License
+├── CODE_OF_CONDUCT.md          <- Community guidelines
+├── CONTRIBUTING.md             <- Contribution guide
 ├── package.json                <- Shortcut scripts (npm run dev, etc.)
 │
 └── ai-clipper/                 <- Main application folder
     ├── .env                    <- Secrets & API Key Configuration
-    ├── dev.py                  <- Integrated script launching backend + frontend 
+    ├── dev.py                  <- Integrated script launching backend + frontend
     ├── docker-compose.yml      <- Docker Container Orchestrator & Networking
     ├── storage/                <- Isolated storage for original media & clips
     │
     ├── backend/                <- Backend Server (Python/FastAPI)
     │   ├── Dockerfile          <- Backend Service Containerization Instructions
-    │   ├── main.py             <- Entry point - FastAPI Middleware & CORS init
-    │   ├── database.py         <- PostgreSQL ORM connector engine (Supabase / SQLite fallback)
+    │   ├── main.py             <- Entry point — FastAPI Middleware & CORS init
+    │   ├── database.py         <- PostgreSQL ORM connector (Supabase / SQLite fallback)
     │   ├── worker.py           <- ARQ Asynchronous Worker & Queue Pipeline
     │   ├── redis_client.py     <- Connection Manager & Upstash Redis Resiliency
     │   ├── requirements.txt    <- Python Library Dependencies
+    │   ├── fonts/              <- Bundled subtitle fonts (Georgia, Anton, Oswald, etc.)
     │   ├── models/
     │   │   ├── __init__.py
     │   │   └── schemas.py      <- Pydantic & SQLAlchemy ORM Models
@@ -192,6 +182,7 @@ AUVI/
             │   ├── ClipTimeline.jsx     <- Visual Timeline Navigator
             │   ├── VideoPlayer.jsx      <- Modern Vertical Media Player
             │   ├── CaptionOverlay.jsx   <- Live TikTok Subtitle Animation Simulator
+            │   ├── GenerateOptionsModal.jsx <- Clip Settings & Subtitle Style Picker
             │   └── SettingsDrawer.jsx   <- Language & Viral Score Threshold Controls
             ├── store/
             │   └── useClipStore.js  <- Global State Management (Zustand Architecture)
@@ -210,6 +201,7 @@ Before you begin, ensure your machine meets the following requirements:
 | **OS** | Windows 10, macOS 10.15, Ubuntu 20.04 | Windows 11, macOS 14+, Ubuntu 22.04 |
 | **RAM** | 4 GB | 8 GB or more |
 | **Storage** | 5 GB free space | 10 GB+ (for large videos) |
+| **GPU** | None (CPU fallback) | AMD Radeon / NVIDIA GTX 1060+ / Intel QSV |
 | **Dependencies**| Git, Python 3.11+, Node.js 20+, FFmpeg | Same |
 
 ---
@@ -219,8 +211,6 @@ Before you begin, ensure your machine meets the following requirements:
 You can easily get the application running on your local machine by following these quick steps.
 
 ### 1. Clone the Repository
-
-Open your terminal or command prompt and clone the repository:
 
 ```bash
 git clone https://github.com/Alistaire-Q/AUVI.git
@@ -304,9 +294,13 @@ REDIS_SSL=true
 
 ## Troubleshooting
 
-- **ffmpeg: command not found**: Ensure FFmpeg is installed and added to your system PATH.
-- **Request failed with status code 500**: Check the backend logs for details on what caused the failure.
-- **Download failed: ERROR: Requested format is not available**: Your `yt-dlp` might need updating. Run `pip install --upgrade yt-dlp`.
+| Issue | Solution |
+|-------|----------|
+| `ffmpeg: command not found` | Ensure FFmpeg is installed and added to your system PATH |
+| `Request failed with status code 500` | Check the backend logs for details on what caused the failure |
+| `Download failed: ERROR: Requested format is not available` | Update yt-dlp: `pip install --upgrade yt-dlp` |
+| GPU rendering falls back to CPU | Ensure your GPU drivers are up to date. AMD needs AMF SDK, NVIDIA needs CUDA toolkit |
+| `disk I/O error` on SQLite | Close other apps using heavy disk I/O during processing |
 
 ---
 
@@ -323,6 +317,8 @@ REDIS_SSL=true
 | **React 18** | Frontend Framework | UI library for building interactive interfaces |
 | **Vite** | Build Tool | Extremely fast development server & bundler |
 | **TailwindCSS** | CSS Framework | Utility-first CSS styling framework |
+| **Zustand** | State Management | Lightweight global state for React |
+| **ARQ** | Task Queue | Async job processing with Redis backend |
 | **Docker** | Containerization | Runs the application in isolated environments |
 
 ---
@@ -342,7 +338,7 @@ We are open to contributions. Here's how you can contribute:
 
 ## License
 
-This project is licensed under the **MIT License** - see the LICENSE file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ```
 MIT License
@@ -350,5 +346,5 @@ Copyright (c) 2026 Olly
 ```
 
 <div align="center">
-Happy Clipping!
+Happy Clipping! 🎬
 </div>

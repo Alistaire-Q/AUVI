@@ -205,55 +205,55 @@ def _detect_primary_face_x(
 # ──────────────────────────────────────────────
 
 SUBTITLE_TEMPLATES = {
-    "cinematic": {
-        "fontname": "Montserrat",
-        "fontsize": 64,
+    "manifesto": {
+        "fontname": "Georgia",
+        "fontsize": 120,
         "bold": -1,
-        "primary_color": "&H00FFFFFF",   # Putih
-        "highlight_color": "&H00C8E6FF",  # Kuning lembut
-        "outline_color": "&H80000000",    # Hitam semi-transparan
-        "back_color": "&H80000000",
+        "primary_color": "&H00FFFFFF",  # Base White
+        "highlight_color": "&H000000FF", # Red Highlight
+        "outline_color": "&H00000000",   # Black (fine outline)
+        "back_color": "&H40000000",      # Semi-transparent black shadow (~75% opacity)
         "border_style": 1,
-        "outline_width": 2,
-        "shadow_depth": 2,
-        "highlight_scale": 110,
+        "outline_width": 0,               # No heavy stroke
+        "shadow_depth": 3,               # Subtle drop shadow offset
+        "highlight_scale": 100,
     },
-    "bold_viral": {
-        "fontname": "Impact",
-        "fontsize": 72,
+    "pro_accent": {
+        "fontname": "Montserrat",
+        "fontsize": 76,
         "bold": -1,
-        "primary_color": "&H00FFFFFF",   # Putih
-        "highlight_color": "&H0000D7FF",  # Kuning TikTok
-        "outline_color": "&H00000000",    # Hitam solid
-        "back_color": "&H80000000",
+        "primary_color": "&H00FFFFFF",     # White base
+        "highlight_color": "&H0000D7FF",   # Neon Yellow (#FFD700)
+        "outline_color": "&H00000000",     # Black
+        "back_color": "&HCC000000",        # Deep black shadow (~80% opacity)
         "border_style": 1,
-        "outline_width": 5,
-        "shadow_depth": 3,
+        "outline_width": 0,                # No stroke, shadow only
+        "shadow_depth": 3,                 # Moderate drop shadow
         "highlight_scale": 115,
     },
     "soft_edu": {
         "fontname": "Roboto",
         "fontsize": 60,
         "bold": 0,
-        "primary_color": "&H00F0F0FF",   # Putih krem
-        "highlight_color": "&H00FFD4A0",  # Biru muda
-        "outline_color": "&H00303030",    # Abu-abu gelap
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00FFD4A0",
+        "outline_color": "&H003B30FF",
         "back_color": "&H60000000",
         "border_style": 1,
-        "outline_width": 3,
-        "shadow_depth": 1,
+        "outline_width": 0,
+        "shadow_depth": 2,
         "highlight_scale": 108,
     },
     "corporate": {
         "fontname": "Montserrat",
         "fontsize": 62,
         "bold": -1,
-        "primary_color": "&H00FFFFFF",   # Putih
-        "highlight_color": "&H0080D080",  # Hijau aksen
-        "outline_color": "&H00000000",    # Hitam solid
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0080D080",
+        "outline_color": "&H003B30FF",
         "back_color": "&H80000000",
         "border_style": 1,
-        "outline_width": 4,
+        "outline_width": 0,
         "shadow_depth": 2,
         "highlight_scale": 105,
     },
@@ -261,34 +261,101 @@ SUBTITLE_TEMPLATES = {
         "fontname": "Roboto",
         "fontsize": 66,
         "bold": -1,
-        "primary_color": "&H00E0E0E0",   # Abu terang
-        "highlight_color": "&H00FFFF00",  # Cyan neon
-        "outline_color": "&H00000000",    # Hitam
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00FFFF00",
+        "outline_color": "&H003B30FF",
         "back_color": "&H60000000",
         "border_style": 1,
-        "outline_width": 3,
-        "shadow_depth": 3,
+        "outline_width": 0,
+        "shadow_depth": 2,
         "highlight_scale": 112,
+    },
+    "market": {
+        "fontname": "Oswald",
+        "fontsize": 68,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0064D900", # Hijau
+        "outline_color": "&H00303BFF",   # Merah
+        "back_color": "&H80000000",
+        "border_style": 1,
+        "outline_width": 0,
+        "shadow_depth": 2,
+        "highlight_scale": 110,
+    },
+    "duo": {
+        "fontname": "Inter",
+        "fontsize": 64,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0030A6FF", # Amber (Speaker A)
+        "outline_color": "&H00B6C42E",   # Teal (Speaker B)
+        "back_color": "&H80000000",
+        "border_style": 1,
+        "outline_width": 0,
+        "shadow_depth": 2,
+        "highlight_scale": 105,
+    },
+    "pop": {
+        "fontname": "Baloo 2",
+        "fontsize": 72,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H00A53EFF",
+        "outline_color": "&H00F72F7B",
+        "back_color": "&H00000000",
+        "border_style": 1,
+        "outline_width": 0,
+        "shadow_depth": 2,
+        "highlight_scale": 115,
+    },
+    "noir": {
+        "fontname": "Playfair Display",
+        "fontsize": 64,
+        "bold": -1,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0037AFD4",
+        "outline_color": "&H001A1A1A",
+        "back_color": "&H90000000",
+        "border_style": 1,
+        "outline_width": 0,
+        "shadow_depth": 2,
+        "highlight_scale": 105,
+    },
+    "casefile": {
+        "fontname": "Bebas Neue",
+        "fontsize": 78,
+        "bold": 0,
+        "primary_color": "&H00FFFFFF",
+        "highlight_color": "&H0000008B",
+        "outline_color": "&H0000008B",
+        "back_color": "&H90000000",
+        "border_style": 1,
+        "outline_width": 0,
+        "shadow_depth": 2,
+        "highlight_scale": 108,
     },
 }
 
 # Backward compatibility: map old names to new
 _TEMPLATE_ALIASES = {
-    "tiktok": "bold_viral",
-    "standard": "cinematic",
+    "tiktok": "pro_accent",
+    "bold_viral": "pro_accent",
+    "standard": "manifesto",
+    "cinematic": "manifesto",
 }
 
 def _get_template(style_name: str) -> dict:
     """Get subtitle template by name, with fallback."""
     name = _TEMPLATE_ALIASES.get(style_name, style_name)
-    return SUBTITLE_TEMPLATES.get(name, SUBTITLE_TEMPLATES["bold_viral"])
+    return SUBTITLE_TEMPLATES.get(name, SUBTITLE_TEMPLATES["pro_accent"])
 
 
 # ──────────────────────────────────────────────
 # ASS Subtitle Generator
 # ──────────────────────────────────────────────
 
-def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subtitle_position: str = "bottom", frame_size: str = "9:16", subtitle_style: str = "bold_viral") -> str:
+def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subtitle_position: str = "bottom", frame_size: str = "9:16", subtitle_style: str = "pro_accent") -> str:
     """
     Generate Advanced SubStation Alpha (ASS) subtitle file for dynamic word-by-word highlights.
     Creates overlapping dialogue events to colorize the active word.
@@ -381,22 +448,55 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
             chunks.append(current_chunk)
             current_chunk = []
 
+    import re
+    def get_word_sentiment(word: str) -> str:
+        w = word.lower()
+        clean_w = re.sub(r'[^\w\+\-]', '', w)
+        positive_keywords = {'profit', 'untung', 'naik', 'cuan', 'meningkat', 'sukses', 'bagus', 'terbaik', 'kaya', 'tumbuh'}
+        negative_keywords = {'rugi', 'turun', 'anjlok', 'minus', 'gagal', 'hancur', 'jelek', 'miskin', 'jatuh', 'hilang'}
+        
+        if clean_w in positive_keywords or '+' in clean_w:
+            return 'positive'
+        elif clean_w in negative_keywords or '-' in clean_w:
+            return 'negative'
+        return 'neutral'
+
+    current_speaker = "SPEAKER A"
+    speaker_color = tmpl['highlight_color']
+
     event_count = 0
     for c_idx, chunk in enumerate(chunks):
+        # Speaker labels only for "duo" style
+        if subtitle_style == "duo":
+            if c_idx > 0:
+                prev_end = chunks[c_idx-1][-1]["end"]
+                curr_start = chunk[0]["start"]
+                if curr_start - prev_end > 1.2:
+                    if current_speaker == "SPEAKER A":
+                        current_speaker = "SPEAKER B"
+                        speaker_color = tmpl['outline_color']
+                    else:
+                        current_speaker = "SPEAKER A"
+                        speaker_color = tmpl['highlight_color']
+            speaker_pill = f"{{\\c&HFFFFFF&\\3c{speaker_color}\\bord6\\shad0\\fs40\\b1}}{current_speaker}{{\\r}} \\N "
+        else:
+            speaker_pill = ""
+
         for i, cw in enumerate(chunk):
             w_start = cw["start"]
             
             if i < len(chunk) - 1:
-                # End strictly when the next word starts (no overlap)
-                w_end = chunk[i+1]["start"]
+                # End 10ms (1 centisecond) BEFORE the next word starts.
+                # ASS format uses centiseconds as its smallest unit.
+                # If end == next_start, both events render on the same frame → double text.
+                w_end = chunk[i+1]["start"] - 0.01
             else:
-                # End of the chunk. Ensure it doesn't overlap with the NEXT chunk!
+                # End of the chunk. Ensure it doesn't overlap with the NEXT chunk.
                 if c_idx < len(chunks) - 1:
                     next_chunk_start = chunks[c_idx+1][0]["start"]
-                    # Cap the end time well before the next chunk starts
-                    # Use 0.05s gap (≈1-2 frames at 30fps) to prevent ASS collision stacking
-                    w_end = min(cw["end"] + 0.15, next_chunk_start - 0.05)
-                    # Safety boundary
+                    # Cap the end time before the next chunk starts (with 10ms safety gap)
+                    w_end = min(cw["end"] + 0.15, next_chunk_start - 0.01)
+                    # Safety boundary: event must last at least 50ms
                     w_end = max(w_start + 0.05, w_end)
                 else:
                     w_end = cw["end"] + 0.15
@@ -405,13 +505,29 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
             for j, loop_cw in enumerate(chunk):
                 word_text = loop_cw["word"].upper()
                 if j == i:
-                    hl_color = tmpl['highlight_color']
-                    hl_scale = tmpl['highlight_scale']
-                    text_parts.append(f"{{\\c{hl_color}\\fscx{hl_scale}\\fscy{hl_scale}}}{word_text}{{\\r}}")
+                    if subtitle_style == "manifesto":
+                        highlight_color = tmpl['highlight_color']
+                        text_parts.append(f"{{\\c{highlight_color}\\blur1}}{word_text}{{\\r}}")
+                    elif subtitle_style == "pro_accent":
+                        # Single-color highlight + scale pop
+                        hl_color = tmpl['highlight_color']
+                        hl_scale = tmpl['highlight_scale']
+                        text_parts.append(f"{{\\c{hl_color}\\fscx{hl_scale}\\fscy{hl_scale}}}{word_text}{{\\r}}")
+                    else:
+                        # Color highlight + scale pop using template's highlight_color
+                        hl_color = tmpl['highlight_color']
+                        hl_scale = tmpl['highlight_scale']
+                        text_parts.append(f"{{\\c{hl_color}\\fscx{hl_scale}\\fscy{hl_scale}}}{word_text}{{\\r}}")
                 else:
-                    text_parts.append(word_text)
+                    if subtitle_style == "manifesto":
+                        text_parts.append(f"{{\\blur1}}{word_text}{{\\r}}")
+                    else:
+                        text_parts.append(word_text)
                     
-            full_text = " ".join(text_parts)
+            if subtitle_style == "manifesto":
+                full_text = " ".join(text_parts)
+            else:
+                full_text = speaker_pill + " ".join(text_parts)
             start_str = format_ass_time(w_start)
             end_str = format_ass_time(w_end)
             
@@ -578,7 +694,7 @@ def generate_clip(
 
     # ── 4. Build subtitle filter ──
     if srt_path and srt_ffmpeg_path and subtitle_enabled:
-        sub_filter = f"subtitles='{srt_ffmpeg_path}'"
+        sub_filter = f"subtitles='{srt_ffmpeg_path}':fontsdir='fonts'"
         video_filter = f"{crop_filter},{scale_filter},{sub_filter}"
     else:
         # No subtitles — just crop + scale
@@ -586,37 +702,75 @@ def generate_clip(
 
     # ── 5. Execute FFmpeg — cut EXACTLY at LLM timestamps ──
     try:
-        logger.info("Attempting GPU Hardware Acceleration (NVENC)...")
+        logger.info("Attempting GPU Hardware Acceleration (AMD AMF)...")
         stream = ffmpeg.input(source_path, ss=start, t=end-start)
         stream = ffmpeg.output(
             stream, output_path,
             vf=video_filter,
-            vcodec="h264_nvenc",
+            vcodec="h264_amf",
             acodec="aac",
-            preset="p4",
-            cq=18,
             pix_fmt="yuv420p",
             movflags="faststart",
             threads=0,
         )
         ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
-        logger.info("GPU Rendering successful!")
-    except ffmpeg.Error as e_gpu:
-        logger.warning(f"GPU Acceleration (NVENC) unavailable or failed. Falling back to CPU (libx264)...")
+        logger.info("AMD GPU Rendering successful!")
+    except ffmpeg.Error as e_amd:
+        logger.warning("AMD GPU Acceleration (AMF) unavailable or failed. Attempting NVIDIA (NVENC)...")
         try:
+            logger.info("Attempting GPU Hardware Acceleration (NVENC)...")
             stream = ffmpeg.input(source_path, ss=start, t=end-start)
             stream = ffmpeg.output(
                 stream, output_path,
                 vf=video_filter,
-                vcodec="libx264",
+                vcodec="h264_nvenc",
                 acodec="aac",
-                preset="fast",
-                crf=18,
+                preset="p4",
+                cq=18,
                 pix_fmt="yuv420p",
                 movflags="faststart",
                 threads=0,
             )
             ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
+            logger.info("NVIDIA GPU Rendering successful!")
+        except ffmpeg.Error as e_nvenc:
+            logger.warning("NVIDIA GPU Acceleration (NVENC) unavailable or failed. Attempting INTEL (QSV)...")
+            try:
+                logger.info("Attempting GPU Hardware Acceleration (INTEL QSV)...")
+                stream = ffmpeg.input(source_path, ss=start, t=end-start)
+                stream = ffmpeg.output(
+                    stream, output_path,
+                    vf=video_filter,
+                    vcodec="h264_qsv",
+                    acodec="aac",
+                    preset="fast",
+                    pix_fmt="nv12",
+                    movflags="faststart",
+                    threads=0,
+                )
+                ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
+                logger.info("INTEL GPU Rendering successful!")
+            except ffmpeg.Error as e_qsv:
+                logger.warning("Intel GPU Acceleration (QSV) unavailable or failed. Falling back to CPU (libx264)...")
+                try:
+                    stream = ffmpeg.input(source_path, ss=start, t=end-start)
+                    stream = ffmpeg.output(
+                        stream, output_path,
+                        vf=video_filter,
+                        vcodec="libx264",
+                        acodec="aac",
+                        preset="fast",
+                        crf=18,
+                        pix_fmt="yuv420p",
+                        movflags="faststart",
+                        threads=4,
+                        **{"rc-lookahead": "20"},
+                    )
+                    ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
+                    logger.info("CPU Rendering successful!")
+                except ffmpeg.Error as e_cpu:
+                    logger.error(f"FFmpeg CPU Rendering failed: {e_cpu.stderr.decode('utf-8', errors='replace') if e_cpu.stderr else str(e_cpu)}")
+                    raise e_cpu
 
         except ffmpeg.Error as e:
             stderr = e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)
@@ -633,7 +787,8 @@ def generate_clip(
                         acodec="aac",
                         preset="fast",
                         crf=18,
-                        threads=0,
+                        threads=4,
+                        **{"rc-lookahead": "20"},
                     )
                     ffmpeg.run(stream, overwrite_output=True, quiet=False, capture_stdout=True, capture_stderr=True)
                 except ffmpeg.Error as e2:
