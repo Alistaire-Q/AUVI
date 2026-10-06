@@ -413,6 +413,18 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
 
     # Get template styling
     tmpl = _get_template(subtitle_style)
+    
+    # Adjust font size and chunking based on frame_size
+    base_fontsize = tmpl["fontsize"]
+    if frame_size == "9:16":
+        adjusted_fontsize = int(base_fontsize * 0.75)
+        max_words_per_chunk = 4
+    elif frame_size == "1:1":
+        adjusted_fontsize = int(base_fontsize * 0.85)
+        max_words_per_chunk = 5
+    else:  # 16:9
+        adjusted_fontsize = base_fontsize
+        max_words_per_chunk = 6
 
     lines = [
         "[Script Info]",
@@ -424,7 +436,7 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
         "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Default,{tmpl['fontname']},{tmpl['fontsize']},{tmpl['primary_color']},&H000000FF,{tmpl['outline_color']},{tmpl['back_color']},{tmpl['bold']},0,0,0,100,100,0,0,{tmpl['border_style']},{tmpl['outline_width']},{tmpl['shadow_depth']},{alignment},60,60,{margin_v},1",
+        f"Style: Default,{tmpl['fontname']},{adjusted_fontsize},{tmpl['primary_color']},&H000000FF,{tmpl['outline_color']},{tmpl['back_color']},{tmpl['bold']},0,0,0,100,100,0,0,{tmpl['border_style']},{tmpl['outline_width']},{tmpl['shadow_depth']},{alignment},60,60,{margin_v},1",
         "",
         "[Events]",
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
@@ -444,7 +456,7 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
         next_w_start = max(0.0, processed_words[i + 1]["start"] - offset) if not is_last else 0.0
         has_pause = not is_last and (next_w_start - w_end > 0.5)
         
-        if len(current_chunk) >= 6 or has_pause or is_last:
+        if len(current_chunk) >= max_words_per_chunk or has_pause or is_last:
             chunks.append(current_chunk)
             current_chunk = []
 
@@ -462,25 +474,11 @@ def _generate_ass(words: list[dict], output_path: str, offset: float = 0.0, subt
         return 'neutral'
 
     current_speaker = "SPEAKER A"
-    speaker_color = tmpl['highlight_color']
+    speaker_color = tmpl["highlight_color"]
 
     event_count = 0
     for c_idx, chunk in enumerate(chunks):
-        # Speaker labels only for "duo" style
-        if subtitle_style == "duo":
-            if c_idx > 0:
-                prev_end = chunks[c_idx-1][-1]["end"]
-                curr_start = chunk[0]["start"]
-                if curr_start - prev_end > 1.2:
-                    if current_speaker == "SPEAKER A":
-                        current_speaker = "SPEAKER B"
-                        speaker_color = tmpl['outline_color']
-                    else:
-                        current_speaker = "SPEAKER A"
-                        speaker_color = tmpl['highlight_color']
-            speaker_pill = f"{{\\c&HFFFFFF&\\3c{speaker_color}\\bord6\\shad0\\fs40\\b1}}{current_speaker}{{\\r}} \\N "
-        else:
-            speaker_pill = ""
+        speaker_pill = ""
 
         for i, cw in enumerate(chunk):
             w_start = cw["start"]
