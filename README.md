@@ -128,7 +128,7 @@ AUVI/
 ├── package.json                <- Shortcut scripts (npm run dev, etc.)
 │
 └── ai-clipper/                 <- Main application folder
-    ├── .env                    <- Secrets & API Key Configuration
+    ├── .env.example            <- Secrets & API Key Configuration
     ├── dev.py                  <- Integrated script launching backend + frontend
     ├── docker-compose.yml      <- Docker Container Orchestrator & Networking
     ├── storage/                <- Isolated storage for original media & clips
